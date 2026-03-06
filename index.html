@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DarkSearch — Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{--red:#e01c24;--red-bright:#ff2d37;--red-dark:#8b0000;--red-glow:rgba(224,28,36,0.4);--red-subtle:rgba(224,28,36,0.08);--black:#000;--dark2:#0f0f0f;--dark3:#161616;--dark4:#1e1e1e;--border:rgba(224,28,36,0.2);--border-bright:rgba(224,28,36,0.5);--text:#e8e8e8;--text-dim:#888;--text-faint:#444;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);min-height:100vh;overflow-x:hidden;}
+#particles-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+
+/* ===== AUTH PAGES ===== */
+.auth-page{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;background:rgba(0,0,0,0.97);}
+.auth-page.show{display:flex;}
+.auth-box{background:var(--dark3);border:1px solid var(--border-bright);border-radius:24px;padding:44px 40px;width:100%;max-width:420px;position:relative;box-shadow:0 0 60px var(--red-glow),0 0 120px rgba(224,28,36,0.1);animation:boxIn 0.4s ease;}
+@keyframes boxIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.auth-logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:4px;color:white;text-align:center;margin-bottom:6px;}
+.auth-logo span{color:var(--red-bright);text-shadow:0 0 20px var(--red-glow);}
+.auth-subtitle{text-align:center;font-size:12px;color:var(--text-faint);letter-spacing:1px;margin-bottom:32px;font-family:'Rajdhani',sans-serif;}
+.auth-field{margin-bottom:16px;}
+.auth-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;display:block;margin-bottom:6px;}
+.auth-input{width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.auth-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,28,36,0.12);}
+.auth-input::placeholder{color:var(--text-faint);}
+.auth-btn{width:100%;padding:14px;background:var(--red);color:white;border:none;border-radius:10px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px var(--red-glow);text-transform:uppercase;margin-top:8px;}
+.auth-btn:hover{background:var(--red-bright);box-shadow:0 6px 30px rgba(255,45,55,0.5);transform:translateY(-1px);}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--text-dim);}
+.auth-switch a{color:var(--red-bright);cursor:pointer;text-decoration:none;font-weight:600;}
+.auth-switch a:hover{text-decoration:underline;}
+.auth-error{background:rgba(224,28,36,0.12);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red-bright);margin-bottom:14px;display:none;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;}
+.auth-error.show{display:block;}
+.auth-success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#22c55e;margin-bottom:14px;display:none;font-family:'Rajdhani',sans-serif;}
+.auth-success.show{display:block;}
+.pass-strength{height:3px;border-radius:2px;margin-top:6px;transition:all 0.3s;background:var(--dark4);}
+
+/* ===== TOPBAR ===== */
+.topbar{position:fixed;top:0;left:0;right:0;height:62px;background:rgba(5,5,5,0.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 36px;z-index:999;backdrop-filter:blur(24px);}
+.topbar-logo{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:4px;color:white;display:flex;align-items:center;gap:10px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--red-bright);box-shadow:0 0 10px var(--red-bright);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.topbar-nav{display:flex;gap:4px;position:absolute;left:50%;transform:translateX(-50%);}
+.top-nav-item{padding:7px 16px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.8px;color:var(--text-dim);cursor:pointer;transition:all 0.2s;border:1px solid transparent;text-transform:uppercase;}
+.top-nav-item:hover{color:var(--text);background:var(--red-subtle);border-color:var(--border);}
+.top-nav-item.active{color:white;background:var(--red);border-color:var(--red-bright);box-shadow:0 0 16px var(--red-glow);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-user{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:8px;}
+.topbar-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--red-dark),var(--red));border:1px solid var(--red);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:white;}
+.topbar-badge{padding:2px 8px;border-radius:10px;font-size:9px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;}
+.badge-free-top{background:rgba(136,136,136,0.15);border:1px solid rgba(136,136,136,0.3);color:var(--text-dim);}
+.badge-pro-top{background:rgba(224,28,36,0.15);border:1px solid var(--border-bright);color:var(--red-bright);}
+.badge-elite-top{background:rgba(139,0,0,0.3);border:1px solid rgba(139,0,0,0.5);color:#ff6b6b;}
+.badge-admin-top{background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);color:#ffa500;}
+.logout-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.notif-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;font-size:16px;position:relative;}
+.notif-btn:hover{border-color:var(--red);color:var(--red);}
+.notif-dot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+
+/* ===== MAIN ===== */
+.main{margin-top:62px;min-height:calc(100vh - 62px);position:relative;z-index:1;}
+.content-area{padding:44px 52px;}
+.page{display:none;}.page.active{display:block;}
+
+/* ===== HOME ===== */
+.greeting{font-family:'Orbitron',monospace;font-size:40px;font-weight:900;letter-spacing:-1px;margin-bottom:6px;line-height:1.1;}
+.greeting span{color:var(--red-bright);text-shadow:0 0 30px var(--red-glow);}
+.greeting-sub{color:var(--text-dim);font-size:14px;letter-spacing:0.5px;margin-bottom:28px;}
+.stats-row{display:flex;align-items:center;gap:28px;padding:22px 32px;margin-bottom:24px;background:var(--dark3);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden;}
+.stats-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--red),transparent);}
+.stat-item{display:flex;flex-direction:column;}
+.stat-num{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:white;letter-spacing:-1px;}
+.stat-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.stat-sep{width:1px;height:40px;background:var(--border);}
+.plan-badge-home{margin-left:auto;padding:4px 14px;border-radius:20px;font-size:11px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;}
+.action-row{display:flex;gap:12px;margin-bottom:36px;}
+.btn-primary{padding:12px 26px;background:var(--red);color:white;border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;box-shadow:0 4px 20px var(--red-glow);text-transform:uppercase;}
+.btn-primary:hover{background:var(--red-bright);box-shadow:0 4px 30px rgba(255,45,55,0.5);transform:translateY(-1px);}
+.btn-secondary{padding:12px 26px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;}
+.btn-secondary:hover{border-color:var(--red);color:var(--red);background:var(--red-subtle);}
+
+/* Home panels */
+.home-panels{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.panel{background:var(--dark3);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+.panel-body{padding:28px;}
+
+/* Discord card */
+.discord-card{background:linear-gradient(135deg,#1a0a0a,#0a0a1a);border:1px solid rgba(88,101,242,0.3);border-radius:12px;padding:24px;text-align:center;}
+.discord-icon{font-size:40px;margin-bottom:12px;}
+.discord-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:white;margin-bottom:6px;}
+.discord-link{font-size:18px;font-family:'Rajdhani',sans-serif;font-weight:700;color:#7289da;letter-spacing:1px;margin-bottom:16px;}
+.discord-btn{display:inline-block;padding:10px 24px;background:#7289da;color:white;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s;border:none;}
+.discord-btn:hover{background:#5b73c9;transform:translateY(-1px);}
+
+/* ===== SNAKE GAME ===== */
+.snake-panel{background:var(--dark3);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.snake-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.snake-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+.snake-score{font-family:'Orbitron',monospace;font-size:13px;color:var(--red-bright);}
+.snake-body{padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+#snake-canvas{border:1px solid var(--border);border-radius:8px;background:#080808;display:block;}
+.snake-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.snake-btn{padding:8px 16px;background:var(--dark4);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.snake-btn:hover{border-color:var(--red);color:var(--red);}
+.snake-info{font-size:11px;color:var(--text-faint);font-family:'Rajdhani',sans-serif;letter-spacing:1px;}
+
+/* ===== SEARCH ===== */
+.search-page-inner{max-width:800px;margin:0 auto;}
+.search-header{text-align:center;margin-bottom:36px;}
+.search-icon-big{width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,var(--red-dark),var(--red));border:1px solid var(--red-bright);box-shadow:0 0 40px var(--red-glow);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 20px;animation:pulseA 3s ease-in-out infinite;}
+@keyframes pulseA{0%,100%{box-shadow:0 0 20px var(--red-glow)}50%{box-shadow:0 0 40px rgba(224,28,36,0.7)}}
+.search-title{font-family:'Orbitron',monospace;font-size:28px;font-weight:700;letter-spacing:-1px;margin-bottom:8px;}
+.search-title span{color:var(--red-bright);}
+.search-subtitle{color:var(--text-dim);font-size:13px;line-height:1.6;}
+.search-tabs{display:flex;gap:6px;margin-bottom:24px;background:var(--dark3);border:1px solid var(--border);border-radius:12px;padding:6px;}
+.search-tab{flex:1;padding:10px 16px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.search-tab.active{background:var(--red);border-color:var(--red-bright);color:white;box-shadow:0 0 15px var(--red-glow);}
+.search-form{background:var(--dark3);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.form-field{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;}
+.form-input{background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:all 0.2s;}
+.form-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,28,36,0.1);}
+.form-input::placeholder{color:var(--text-faint);font-size:12px;}
+.btn-search{width:100%;padding:14px;background:var(--red);color:white;border:none;border-radius:10px;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s;box-shadow:0 4px 20px var(--red-glow);text-transform:uppercase;margin-top:8px;}
+.btn-search:hover{background:var(--red-bright);box-shadow:0 6px 30px rgba(255,45,55,0.5);transform:translateY(-2px);}
+.tab-content{display:none;}.tab-content.active{display:block;}
+.results-section{margin-top:24px;}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.results-title{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;}
+.results-count{padding:3px 10px;background:var(--red-subtle);border:1px solid var(--border);border-radius:20px;font-size:12px;font-family:'Orbitron',monospace;color:var(--red-bright);}
+.result-card{background:var(--dark3);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;animation:fadeSlide 0.4s ease;transition:all 0.2s;}
+.result-card:hover{border-color:var(--red);box-shadow:0 4px 20px var(--red-glow);}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.result-card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--dark2);}
+.result-person{display:flex;align-items:center;gap:12px;}
+.result-avatar{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--red-dark),var(--dark4));border:1px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--red-bright);}
+.result-name{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:white;}
+.result-id{font-size:11px;color:var(--text-faint);font-family:'Orbitron',monospace;}
+.result-status{padding:4px 10px;border-radius:20px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:1px;}
+.status-active{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22c55e;}
+.status-inactive{background:rgba(136,136,136,0.1);border:1px solid rgba(136,136,136,0.2);color:var(--text-dim);}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);}
+.result-field{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.04);border-right:1px solid rgba(255,255,255,0.04);}
+.result-field:nth-child(3n){border-right:none;}
+.result-field-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:4px;}
+.result-field-value{font-size:13px;color:var(--text);}
+.result-field-value.highlight{color:var(--red-bright);font-weight:500;}
+.no-results{text-align:center;padding:48px;color:var(--text-faint);}
+.no-results-icon{font-size:36px;margin-bottom:12px;opacity:0.5;}
+.no-results-text{font-family:'Rajdhani',sans-serif;font-size:14px;}
+.loading-state{text-align:center;padding:48px;}
+.loader{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;margin:0 auto 12px;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.search-footer-note{text-align:center;font-size:11px;color:var(--text-faint);display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:1px;text-transform:uppercase;font-family:'Rajdhani',sans-serif;}
+.search-limit-warning{background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:10px;padding:12px 16px;font-size:12px;color:#ffa500;font-family:'Rajdhani',sans-serif;text-align:center;margin-bottom:16px;display:none;}
+.search-limit-warning.show{display:block;}
+
+/* ===== ABONNEMENT ===== */
+.abo-page{max-width:1100px;margin:0 auto;}
+.abo-header{text-align:center;margin-bottom:44px;}
+.abo-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;background:var(--red-subtle);border:1px solid var(--border-bright);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--red-bright);margin-bottom:20px;}
+.abo-title{font-family:'Orbitron',monospace;font-size:34px;font-weight:900;letter-spacing:-1px;margin-bottom:12px;line-height:1.15;}
+.abo-title span{color:var(--red-bright);text-shadow:0 0 30px var(--red-glow);}
+.abo-sub{color:var(--text-dim);font-size:14px;max-width:480px;margin:0 auto;line-height:1.7;}
+.abo-toggle{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:44px;}
+.toggle-label{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:var(--text-faint);transition:color 0.2s;}
+.toggle-label.active{color:white;}
+.toggle-switch{width:52px;height:28px;border-radius:14px;background:var(--dark4);border:1px solid var(--border);position:relative;cursor:pointer;transition:all 0.3s;}
+.toggle-switch.on{background:var(--red);border-color:var(--red-bright);box-shadow:0 0 12px var(--red-glow);}
+.toggle-knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:all 0.3s;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+.toggle-switch.on .toggle-knob{left:27px;}
+.annual-badge{background:var(--red-subtle);border:1px solid var(--border);border-radius:10px;padding:2px 8px;font-size:10px;color:var(--red-bright);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;}
+.plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:52px;}
+.plan-card{background:var(--dark3);border:1px solid var(--border);border-radius:20px;overflow:hidden;transition:all 0.3s;position:relative;}
+.plan-card:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(0,0,0,0.5);}
+.plan-card.popular{border-color:var(--red-bright);box-shadow:0 0 30px var(--red-glow),0 0 70px rgba(224,28,36,0.1);}
+.popular-ribbon{position:absolute;top:0;left:0;right:0;padding:7px;text-align:center;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:white;background:linear-gradient(90deg,var(--red-dark),var(--red),var(--red-dark));background-size:200% auto;animation:shimmer 3s linear infinite;}
+@keyframes shimmer{to{background-position:200% center}}
+.plan-header{padding:28px 24px 20px;border-bottom:1px solid var(--border);}
+.plan-card.popular .plan-header{padding-top:40px;}
+.plan-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;border:1px solid var(--border);}
+.plan-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:white;letter-spacing:1px;margin-bottom:6px;text-transform:uppercase;}
+.plan-desc{font-size:11px;color:var(--text-dim);line-height:1.5;}
+.plan-price-area{padding:18px 24px;border-bottom:1px solid var(--border);}
+.plan-price{display:flex;align-items:flex-end;gap:3px;margin-bottom:4px;}
+.price-currency{font-size:16px;color:var(--text-dim);margin-bottom:5px;font-family:'Rajdhani',sans-serif;}
+.price-amount{font-family:'Orbitron',monospace;font-size:42px;font-weight:900;color:white;line-height:1;letter-spacing:-2px;}
+.plan-card.popular .price-amount{color:var(--red-bright);text-shadow:0 0 20px var(--red-glow);}
+.price-period{font-size:12px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;margin-bottom:3px;}
+.price-annual{font-size:10px;color:var(--text-faint);font-family:'Rajdhani',sans-serif;min-height:14px;}
+.plan-features{padding:18px 24px;}
+.feature-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text-dim);}
+.plan-card.popular .feature-item{color:var(--text);}
+.feature-check{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;margin-top:1px;}
+.check-yes{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#22c55e;}
+.check-no{background:rgba(68,68,68,0.3);border:1px solid rgba(68,68,68,0.3);color:var(--text-faint);}
+.plan-cta{padding:0 24px 24px;}
+.btn-plan{width:100%;padding:12px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.btn-plan-free{background:var(--dark4);border:1px solid var(--border);color:var(--text-dim);}
+.btn-plan-free:hover{border-color:var(--red);color:var(--red);background:var(--red-subtle);}
+.btn-plan-starter{background:linear-gradient(135deg,#1a1a2e,#2d2d44);border:1px solid rgba(100,100,200,0.3);color:#aaa;}
+.btn-plan-starter:hover{border-color:#7289da;color:#7289da;}
+.btn-plan-popular{background:var(--red);color:white;border:none;box-shadow:0 4px 20px var(--red-glow);}
+.btn-plan-popular:hover{background:var(--red-bright);box-shadow:0 6px 30px rgba(255,45,55,0.5);transform:translateY(-1px);}
+.btn-plan-elite{background:linear-gradient(135deg,#1a0a00,#3d0a0a);border:1px solid var(--red-dark);color:var(--text-dim);}
+.btn-plan-elite:hover{border-color:var(--red);color:var(--red);}
+.section-title{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;text-align:center;margin-bottom:28px;color:white;}
+.section-title span{color:var(--red-bright);}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:52px;}
+.feat-card{background:var(--dark3);border:1px solid var(--border);border-radius:14px;padding:22px;transition:all 0.2s;}
+.feat-card:hover{border-color:var(--red);transform:translateY(-2px);}
+.feat-icon{font-size:28px;margin-bottom:12px;display:block;}
+.feat-title{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:white;margin-bottom:6px;}
+.feat-desc{font-size:12px;color:var(--text-dim);line-height:1.65;}
+.faq-section{margin-bottom:40px;}
+.faq-item{background:var(--dark3);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:border-color 0.2s;}
+.faq-item:hover{border-color:var(--red);}
+.faq-q{padding:16px 20px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;color:white;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.faq-arrow{color:var(--red);transition:transform 0.2s;font-size:12px;}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.faq-a{display:none;padding:0 20px 16px;font-size:13px;color:var(--text-dim);line-height:1.7;}
+.faq-item.open .faq-a{display:block;}
+
+/* ===== COMPTE PAGE ===== */
+.compte-page{max-width:600px;margin:0 auto;}
+.compte-section{background:var(--dark3);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px;}
+.compte-section-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:white;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.compte-field{margin-bottom:16px;}
+.compte-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;display:block;margin-bottom:6px;}
+.compte-input{width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:all 0.2s;}
+.compte-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,28,36,0.1);}
+.compte-input::placeholder{color:var(--text-faint);}
+.compte-btn{padding:11px 22px;background:var(--red);color:white;border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.compte-btn:hover{background:var(--red-bright);transform:translateY(-1px);}
+.compte-info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.compte-info-row:last-child{border-bottom:none;}
+.compte-info-key{font-size:12px;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:0.5px;}
+.compte-info-val{font-size:13px;color:var(--text);}
+
+/* ===== ADMIN PAGE ===== */
+.admin-page{max-width:1200px;margin:0 auto;}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.admin-title{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:white;}
+.admin-title span{color:var(--red-bright);}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.admin-stat{background:var(--dark3);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color 0.2s;}
+.admin-stat:hover{border-color:var(--red);}
+.admin-stat-num{font-family:'Orbitron',monospace;font-size:28px;font-weight:700;color:var(--red-bright);margin-bottom:4px;}
+.admin-stat-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-family:'Rajdhani',sans-serif;}
+.admin-table-wrap{background:var(--dark3);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.admin-table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.admin-table-title{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);}
+.admin-search-input{background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;outline:none;transition:border-color 0.2s;width:200px;}
+.admin-search-input:focus{border-color:var(--red);}
+.admin-table{width:100%;border-collapse:collapse;}
+.admin-table th{padding:12px 16px;text-align:left;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);font-family:'Rajdhani',sans-serif;font-weight:600;border-bottom:1px solid var(--border);background:var(--dark2);}
+.admin-table td{padding:13px 16px;font-size:13px;color:var(--text-dim);border-bottom:1px solid rgba(255,255,255,0.04);}
+.admin-table tr:last-child td{border-bottom:none;}
+.admin-table tr:hover td{background:var(--red-subtle);color:var(--text);}
+.plan-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;}
+.plan-free{background:rgba(136,136,136,0.15);border:1px solid rgba(136,136,136,0.3);color:var(--text-dim);}
+.plan-starter{background:rgba(100,100,200,0.15);border:1px solid rgba(100,100,200,0.3);color:#7289da;}
+.plan-pro{background:rgba(224,28,36,0.15);border:1px solid var(--border-bright);color:var(--red-bright);}
+.plan-elite{background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);color:#ffa500;}
+.admin-action-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;margin-right:4px;}
+.btn-edit{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);}
+.btn-edit:hover{background:rgba(34,197,94,0.25);}
+.btn-delete{background:rgba(224,28,36,0.15);color:var(--red-bright);border:1px solid var(--border);}
+.btn-delete:hover{background:rgba(224,28,36,0.25);}
+.btn-ban{background:rgba(255,165,0,0.15);color:#ffa500;border:1px solid rgba(255,165,0,0.3);}
+.btn-ban:hover{background:rgba(255,165,0,0.25);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);backdrop-filter:blur(10px);}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--dark3);border:1px solid var(--border-bright);border-radius:22px;padding:36px;max-width:460px;width:90%;text-align:center;box-shadow:0 0 80px var(--red-glow);animation:modalIn 0.3s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.9)translateY(20px)}to{opacity:1;transform:scale(1)translateY(0)}}
+.modal-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:white;margin-bottom:8px;}
+.modal-sub{color:var(--text-dim);font-size:13px;margin-bottom:24px;line-height:1.6;}
+.modal-buttons{display:flex;gap:10px;justify-content:center;}
+.modal-btn-cancel{padding:10px 22px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+.modal-btn-confirm{padding:10px 22px;border-radius:8px;border:none;background:var(--red);color:white;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 0 20px var(--red-glow);}
+
+/* ===== DROPZONE ===== */
+
+.file-chip{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--dark4);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:600;color:var(--text-dim);}
+.file-chip .chip-count{color:var(--red-bright);font-family:'Orbitron',monospace;font-size:10px;}
+.file-chip .chip-remove{cursor:pointer;color:var(--text-faint);margin-left:2px;font-size:13px;}
+.file-chip .chip-remove:hover{color:var(--red-bright);}
+
+</style>
+</head>
+<body>
+<canvas id="particles-canvas"></canvas>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div class="auth-page show" id="login-page">
+  <div class="auth-box">
+    <div class="auth-logo">DARK<span>SEARCH</span></div>
+    <div class="auth-subtitle">INTELLIGENCE PLATFORM</div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-field">
+      <label class="auth-label">Identifiant</label>
+      <input class="auth-input" id="login-user" placeholder="Votre identifiant" autocomplete="username">
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Mot de passe</label>
+      <input class="auth-input" id="login-pass" type="password" placeholder="Votre mot de passe" autocomplete="current-password">
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-bottom:4px;text-align:right;font-family:'Rajdhani',sans-serif" id="login-attempts-info"></div>
+    <button class="auth-btn" onclick="doLogin()">🔐 SE CONNECTER</button>
+    <div class="auth-switch">Pas de compte ? <a onclick="showRegister()">Créer un compte</a></div>
+  </div>
+</div>
+
+<!-- ===== REGISTER PAGE ===== -->
+<div class="auth-page" id="register-page">
+  <div class="auth-box">
+    <div class="auth-logo">DARK<span>SEARCH</span></div>
+    <div class="auth-subtitle">CRÉER UN COMPTE</div>
+    <div class="auth-error" id="reg-error"></div>
+    <div class="auth-success" id="reg-success"></div>
+    <div class="auth-field">
+      <label class="auth-label">Identifiant</label>
+      <input class="auth-input" id="reg-user" placeholder="Choisissez un identifiant" oninput="checkUsername()">
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Email</label>
+      <input class="auth-input" id="reg-email" placeholder="votre@email.com" type="email">
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Mot de passe</label>
+      <input class="auth-input" id="reg-pass" type="password" placeholder="Minimum 8 caractères" oninput="checkPassStrength()">
+      <div class="pass-strength" id="pass-strength"></div>
+    </div>
+    <div class="auth-field">
+      <label class="auth-label">Confirmer le mot de passe</label>
+      <input class="auth-input" id="reg-pass2" type="password" placeholder="Répétez le mot de passe">
+    </div>
+    <button class="auth-btn" onclick="doRegister()">✅ CRÉER MON COMPTE</button>
+    <div class="auth-switch">Déjà un compte ? <a onclick="showLogin()">Se connecter</a></div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<header class="topbar" id="topbar" style="display:none">
+  <div class="topbar-logo"><div class="logo-dot"></div>DARKSEARCH</div>
+  <nav class="topbar-nav" id="topbar-nav">
+    <div class="top-nav-item active" onclick="topNav(this,'home')">Accueil</div>
+    <div class="top-nav-item" onclick="topNav(this,'search')">Recherche</div>
+    <div class="top-nav-item" onclick="topNav(this,'abonnement')">Abonnement</div>
+    <div class="top-nav-item" onclick="topNav(this,'compte')">Mon Compte</div>
+    <div class="top-nav-item" id="admin-nav-btn" style="display:none" onclick="topNav(this,'admin')">⚙️ Admin</div>
+  </nav>
+  <div class="topbar-right">
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="topbar-avatar">?</div>
+      <span id="topbar-username">-</span>
+      <span class="topbar-badge" id="topbar-plan-badge">FREE</span>
+    </div>
+    <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+    <button class="logout-btn" onclick="doLogout()">Déconnexion</button>
+  </div>
+</header>
+
+<div class="main" id="main-app" style="display:none">
+<div class="content-area">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <h1 class="greeting">Bonjour, <span id="home-username">-</span></h1>
+    <p class="greeting-sub">Votre espace de recherche et d'investigation</p>
+    <div class="stats-row">
+      <div class="stat-item"><div class="stat-num" id="counter1">0</div><div class="stat-label">Données indexées</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat-item"><div class="stat-num" id="counter2">0</div><div class="stat-label">Recherches</div></div>
+      <div class="stat-sep"></div>
+      <div class="stat-item"><div class="stat-num" id="counter-searches">0</div><div class="stat-label" id="searches-label">Recherches aujourd'hui</div></div>
+      <div class="plan-badge-home" id="home-plan-badge">FREE</div>
+    </div>
+    <div class="action-row">
+      <button class="btn-primary" onclick="topNav(document.querySelectorAll('.top-nav-item')[1],'search')">🔍 Lancer une recherche</button>
+      <button class="btn-secondary" onclick="topNav(document.querySelectorAll('.top-nav-item')[2],'abonnement')">💎 Voir les offres ↗</button>
+    </div>
+    <div class="home-panels">
+      <!-- Discord -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">💬 Communauté</div></div>
+        <div class="panel-body">
+          <div class="discord-card">
+            <div class="discord-icon">🎮</div>
+            <div class="discord-title">Rejoignez notre Discord</div>
+            <div class="discord-link">discord.gg/rfshop</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">Support, annonces, communauté — tout se passe sur notre serveur Discord officiel.</div>
+            <a class="discord-btn" href="https://discord.gg/rfshop" target="_blank">Rejoindre le Discord</a>
+          </div>
+        </div>
+      </div>
+      <!-- Snake -->
+      <div class="snake-panel">
+        <div class="snake-header">
+          <div class="snake-title">🐍 Snake Game</div>
+          <div class="snake-score">Score: <span id="snake-score">0</span> | Record: <span id="snake-best">0</span></div>
+        </div>
+        <div class="snake-body">
+          <canvas id="snake-canvas" width="340" height="280"></canvas>
+          <div class="snake-controls">
+            <button class="snake-btn" onclick="startSnake()">▶ Jouer</button>
+            <button class="snake-btn" onclick="pauseSnake()">⏸ Pause</button>
+            <button class="snake-btn" onclick="resetSnake()">↺ Reset</button>
+          </div>
+          <div class="snake-info">Utilisez les flèches du clavier ou ZQSD pour jouer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="page-search" class="page">
+    <div class="search-page-inner">
+      <div class="search-header">
+        <div class="search-icon-big">🔍</div>
+        <h2 class="search-title">Recherche <span>Avancée</span></h2>
+        <p class="search-subtitle">Explorez notre base de données en combinant plusieurs critères de recherche</p>
+      </div>
+      <div class="search-limit-warning" id="search-limit-warn"></div>
+      <div class="search-tabs">
+        <button class="search-tab active" onclick="switchTab(this,'identite')">👤 Identité</button>
+        <button class="search-tab" onclick="switchTab(this,'documents')">📄 Documents</button>
+        <button class="search-tab" onclick="switchTab(this,'localisation')">📍 Localisation</button>
+        <button class="search-tab" onclick="switchTab(this,'numerique')">🌐 Numérique</button>
+      </div>
+      <div class="tab-content active" id="tab-identite">
+        <div class="search-form">
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">👤 Nom</label><input class="form-input" id="s-nom" placeholder="Ex: Dupont"></div>
+            <div class="form-field"><label class="form-label">👤 Prénom</label><input class="form-input" id="s-prenom" placeholder="Ex: Jean"></div>
+          </div>
+          <div class="form-grid-3">
+            <div class="form-field"><label class="form-label">📅 Jour</label><input class="form-input" id="s-jour" placeholder="Ex: 15"></div>
+            <div class="form-field"><label class="form-label">📅 Mois</label><input class="form-input" id="s-mois" placeholder="Ex: 03"></div>
+            <div class="form-field"><label class="form-label">📅 Année</label><input class="form-input" id="s-annee" placeholder="Ex: 1990"></div>
+          </div>
+          <div class="form-field" style="margin-bottom:8px"><label class="form-label">📞 Téléphone</label><input class="form-input" id="s-telephone" placeholder="Ex: 0612345678"></div>
+          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-documents">
+        <div class="search-form">
+          <div class="form-field" style="margin-bottom:16px"><label class="form-label">📧 Email</label><input class="form-input" id="s-email" placeholder="Ex: jean@gmail.com"></div>
+          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-localisation">
+        <div class="search-form">
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">📍 Ville</label><input class="form-input" id="s-ville" placeholder="Ex: Paris"></div>
+            <div class="form-field"><label class="form-label">📮 Code Postal</label><input class="form-input" id="s-cp" placeholder="Ex: 75001"></div>
+          </div>
+          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-numerique">
+        <div class="search-form">
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">👤 Username</label><input class="form-input" id="s-username" placeholder="Ex: jean_d"></div>
+            <div class="form-field"><label class="form-label">💻 Adresse IP</label><input class="form-input" id="s-ip" placeholder="Ex: 192.168.1.1"></div>
+          </div>
+          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+        </div>
+      </div>
+      <div class="search-footer-note">🔐 Recherches chiffrées et anonymisées</div>
+      <div class="results-section" id="results-section" style="display:none">
+        <div class="results-header"><div class="results-title">Résultats</div><div class="results-count" id="results-count">0</div></div>
+        <div id="results-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABONNEMENT -->
+  <div id="page-abonnement" class="page">
+    <div class="abo-page">
+      <div class="abo-header">
+        <div class="abo-badge">⚡ PLANS &amp; TARIFS</div>
+        <h2 class="abo-title">Choisissez votre<br><span>niveau d'accès</span></h2>
+        <p class="abo-sub">Débloquez toute la puissance de DarkSearch. Accès illimité, données en temps réel, recherches avancées.</p>
+      </div>
+      <div class="abo-toggle">
+        <span class="toggle-label active" id="lbl-m">Mensuel</span>
+        <div class="toggle-switch" id="bill-tog" onclick="toggleBill()"><div class="toggle-knob"></div></div>
+        <span class="toggle-label" id="lbl-a">Annuel</span>
+        <span class="annual-badge">−20%</span>
+      </div>
+      <div class="plans-grid">
+        <!-- FREE -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <div class="plan-icon" style="background:rgba(68,68,68,0.2)">🔓</div>
+            <div class="plan-name">Free</div>
+            <div class="plan-desc">Découvrez la plateforme gratuitement.</div>
+          </div>
+          <div class="plan-price-area">
+            <div class="plan-price"><span class="price-currency">€</span><span class="price-amount">0</span></div>
+            <div class="price-period">Gratuit pour toujours</div>
+            <div class="price-annual">&nbsp;</div>
+          </div>
+          <div class="plan-features">
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>10 recherches / jour</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Accès données standard</div>
+            <div class="feature-item"><div class="feature-check check-no">✗</div>Recherche multi-critères</div>
+            <div class="feature-item"><div class="feature-check check-no">✗</div>Export données</div>
+            <div class="feature-item"><div class="feature-check check-no">✗</div>Accès API</div>
+          </div>
+          <div class="plan-cta"><button class="btn-plan btn-plan-free">Plan actuel</button></div>
+        </div>
+        <!-- STARTER -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <div class="plan-icon" style="background:rgba(100,100,200,0.15);border-color:rgba(100,100,200,0.3)">⚡</div>
+            <div class="plan-name" style="color:#7289da">Starter</div>
+            <div class="plan-desc">Accès aux données étendu, sans API.</div>
+          </div>
+          <div class="plan-price-area">
+            <div class="plan-price"><span class="price-currency">€</span><span class="price-amount" id="starter-price">10</span></div>
+            <div class="price-period" id="starter-period">/ mois · facturation mensuelle</div>
+            <div class="price-annual" id="starter-annual">&nbsp;</div>
+          </div>
+          <div class="plan-features">
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>100 recherches / jour</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Accès données complet</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Recherche multi-critères</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Export CSV</div>
+            <div class="feature-item"><div class="feature-check check-no">✗</div>Accès API</div>
+          </div>
+          <div class="plan-cta"><button class="btn-plan btn-plan-starter" onclick="openModal('Starter')">⚡ Choisir Starter</button></div>
+        </div>
+        <!-- PRO -->
+        <div class="plan-card popular">
+          <div class="popular-ribbon">⭐ PLUS POPULAIRE</div>
+          <div class="plan-header">
+            <div class="plan-icon" style="background:rgba(224,28,36,0.15);border-color:var(--border-bright)">🔥</div>
+            <div class="plan-name" style="color:var(--red-bright)">Pro</div>
+            <div class="plan-desc">Pour les investigators sérieux. Accès complet.</div>
+          </div>
+          <div class="plan-price-area">
+            <div class="plan-price"><span class="price-currency" style="color:var(--red-bright)">€</span><span class="price-amount" id="pro-price">25</span></div>
+            <div class="price-period" id="pro-period">/ mois · facturation mensuelle</div>
+            <div class="price-annual" id="pro-annual">&nbsp;</div>
+          </div>
+          <div class="plan-features">
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Recherches <strong>illimitées</strong></div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Données complètes</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Recherche multi-critères</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Export CSV / JSON</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>API (5 000 req/mois)</div>
+          </div>
+          <div class="plan-cta"><button class="btn-plan btn-plan-popular" onclick="openModal('Pro')">🚀 Choisir Pro</button></div>
+        </div>
+        <!-- ELITE -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <div class="plan-icon" style="background:rgba(139,0,0,0.2);border-color:rgba(139,0,0,0.4)">💀</div>
+            <div class="plan-name">Elite</div>
+            <div class="plan-desc">Puissance maximale pour les pros.</div>
+          </div>
+          <div class="plan-price-area">
+            <div class="plan-price"><span class="price-currency">€</span><span class="price-amount" id="elite-price">80</span></div>
+            <div class="price-period" id="elite-period">/ mois · facturation mensuelle</div>
+            <div class="price-annual" id="elite-annual">&nbsp;</div>
+          </div>
+          <div class="plan-features">
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Tout le plan Pro</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>API illimitée &amp; dédiée</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Données temps réel</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Multi-comptes (×5)</div>
+            <div class="feature-item"><div class="feature-check check-yes">✓</div>Manager dédié + SLA 99.9%</div>
+          </div>
+          <div class="plan-cta"><button class="btn-plan btn-plan-elite" onclick="openModal('Elite')">💀 Choisir Elite</button></div>
+        </div>
+      </div>
+      <div class="section-title">Pourquoi choisir <span>DarkSearch</span> ?</div>
+      <div class="features-grid">
+        <div class="feat-card"><span class="feat-icon">⚡</span><div class="feat-title">Vitesse Maximale</div><div class="feat-desc">Résultats en moins de 500ms grâce à nos serveurs haute performance distribués mondialement.</div></div>
+        <div class="feat-card"><span class="feat-icon">🔐</span><div class="feat-title">Sécurité Totale</div><div class="feat-desc">Toutes vos recherches sont chiffrées de bout en bout. Aucune donnée conservée après la session.</div></div>
+        <div class="feat-card"><span class="feat-icon">🗄️</span><div class="feat-title">2.7 Milliards d'entrées</div><div class="feat-desc">La plus grande base indexée, mise à jour en temps réel avec de nouvelles sources chaque jour.</div></div>
+      </div>
+      <div class="faq-section">
+        <div class="section-title">Questions <span>fréquentes</span></div>
+        <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Comment fonctionne la facturation ? <span class="faq-arrow">▼</span></div><div class="faq-a">La facturation est automatique à chaque début de période. Annulable à tout moment sans frais.</div></div>
+        <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Puis-je changer de plan ? <span class="faq-arrow">▼</span></div><div class="faq-a">Oui, le changement est immédiat et vous n'êtes facturé que pour la différence au prorata.</div></div>
+        <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q">Y a-t-il une période d'essai ? <span class="faq-arrow">▼</span></div><div class="faq-a">Garantie satisfait ou remboursé de 7 jours sur tous les plans payants.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MON COMPTE -->
+  <div id="page-compte" class="page">
+    <div class="compte-page">
+      <div class="compte-section">
+        <div class="compte-section-title">👤 Informations du compte</div>
+        <div class="compte-info-row"><span class="compte-info-key">Identifiant</span><span class="compte-info-val" id="compte-username">-</span></div>
+        <div class="compte-info-row"><span class="compte-info-key">Email</span><span class="compte-info-val" id="compte-email">-</span></div>
+        <div class="compte-info-row"><span class="compte-info-key">Plan actuel</span><span class="compte-info-val" id="compte-plan">-</span></div>
+        <div class="compte-info-row"><span class="compte-info-key">Recherches aujourd'hui</span><span class="compte-info-val" id="compte-searches">-</span></div>
+        <div class="compte-info-row"><span class="compte-info-key">Membre depuis</span><span class="compte-info-val" id="compte-since">-</span></div>
+      </div>
+      <div class="compte-section">
+        <div class="compte-section-title">🔑 Changer le mot de passe</div>
+        <div class="auth-error" id="pass-error" style="display:none"></div>
+        <div class="auth-success" id="pass-success" style="display:none"></div>
+        <div class="compte-field"><label class="compte-label">Mot de passe actuel</label><input class="compte-input" id="pass-current" type="password" placeholder="Votre mot de passe actuel"></div>
+        <div class="compte-field"><label class="compte-label">Nouveau mot de passe</label><input class="compte-input" id="pass-new" type="password" placeholder="Minimum 8 caractères"></div>
+        <div class="compte-field"><label class="compte-label">Confirmer le nouveau mot de passe</label><input class="compte-input" id="pass-confirm" type="password" placeholder="Répétez le nouveau mot de passe"></div>
+        <button class="compte-btn" onclick="changePassword()">🔑 Changer le mot de passe</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="page-admin" class="page">
+    <div class="admin-page">
+      <div class="admin-header">
+        <div class="admin-title">⚙️ Panel <span>Admin</span></div>
+        <div style="font-size:12px;color:var(--text-dim);font-family:'Rajdhani',sans-serif">Accès restreint — Administrateur</div>
+      </div>
+      <div class="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-total-users">0</div><div class="admin-stat-label">Membres total</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-pro-users">0</div><div class="admin-stat-label">Abonnés Pro+</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-free-users">0</div><div class="admin-stat-label">Comptes Free</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-searches-total">0</div><div class="admin-stat-label">Recherches totales</div></div>
+      </div>
+      <!-- SERVER CONFIG CARD -->
+      <div class="admin-table-wrap" style="margin-bottom:20px">
+        <div class="admin-table-header">
+          <div class="admin-table-title">🌐 Serveur de données (ngrok)</div>
+          <div id="server-status-badge" style="padding:4px 12px;border-radius:20px;font-size:11px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:rgba(136,136,136,0.15);border:1px solid rgba(136,136,136,0.3);color:#888">⏳ NON TESTÉ</div>
+        </div>
+        <div style="padding:20px 20px 24px">
+
+          <!-- GitHub config -->
+          <div style="background:rgba(100,100,200,0.08);border:1px solid rgba(100,100,200,0.2);border-radius:12px;padding:16px;margin-bottom:20px">
+            <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#7289da;letter-spacing:1px;margin-bottom:12px">🔑 CONFIGURATION GITHUB (1 seule fois)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div>
+                <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:5px">Ton username GitHub</div>
+                <input id="gh-user" style="width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" placeholder="ex: monpseudo">
+              </div>
+              <div>
+                <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:5px">Nom du repo GitHub</div>
+                <input id="gh-repo" style="width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" placeholder="ex: darksearch">
+              </div>
+            </div>
+            <div style="margin-bottom:10px">
+              <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);font-family:'Rajdhani',sans-serif;font-weight:600;margin-bottom:5px">Token GitHub <span style="color:var(--text-faint)">(Settings → Developer settings → Personal access tokens → Fine-grained → Contents: Read & Write)</span></div>
+              <input id="gh-token" type="password" style="width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none;font-family:'Courier New',monospace" placeholder="github_pat_...">
+            </div>
+            <button onclick="saveGithubConfig()" style="padding:9px 18px;background:#7289da;color:white;border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px">💾 Sauvegarder config GitHub</button>
+            <div id="gh-config-msg" style="margin-top:8px;font-size:12px;font-family:'Rajdhani',sans-serif;display:none"></div>
+          </div>
+
+          <!-- ngrok URL -->
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.7;font-family:'Rajdhani',sans-serif">
+            Entre l'URL ngrok de ton PC. Elle sera publiée sur GitHub et partagée avec <strong style="color:white">tous les visiteurs</strong> automatiquement.
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <input id="ngrok-url-input" style="flex:1;min-width:260px;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color 0.2s;font-family:'Inter',sans-serif" placeholder="https://ton-domaine.ngrok-free.app">
+            <button onclick="testAndSaveServer()" style="padding:11px 20px;background:var(--red);color:white;border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;box-shadow:0 0 14px var(--red-glow)">💾 Publier l'URL</button>
+            <button onclick="testServerUrl()" style="padding:11px 20px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer">🔌 Tester</button>
+          </div>
+          <div id="server-test-msg" style="margin-top:4px;margin-bottom:12px;font-size:12px;font-family:'Rajdhani',sans-serif;display:none"></div>
+          <div style="padding:14px;background:var(--dark4);border-radius:10px;border:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:11px;color:var(--text-faint);font-family:'Rajdhani',sans-serif;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">URL active (vue par tous)</div>
+            <div id="current-server-url" style="font-family:'Orbitron',monospace;font-size:12px;color:var(--red-bright);word-break:break-all">Chargement...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <div class="admin-table-title">👥 Gestion des membres</div>
+          <input class="admin-search-input" id="admin-search" placeholder="🔍 Rechercher un membre..." oninput="filterAdminTable()">
+        </div>
+        <table class="admin-table" id="admin-table">
+          <thead>
+            <tr>
+              <th>Identifiant</th>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Recherches</th>
+              <th>Membre depuis</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- MODAL PLAN -->
+<div class="modal-overlay" id="plan-modal">
+  <div class="modal-box">
+    <div style="font-size:44px;margin-bottom:16px">💎</div>
+    <div class="modal-title">Plan <span id="modal-plan-name" style="color:var(--red-bright)"></span></div>
+    <div class="modal-sub">Contactez un admin sur Discord pour activer votre abonnement.<br><strong style="color:#7289da">discord.gg/rfshop</strong></div>
+    <div class="modal-buttons">
+      <button class="modal-btn-cancel" onclick="document.getElementById('plan-modal').classList.remove('show')">Fermer</button>
+      <a class="modal-btn-confirm" style="text-decoration:none;display:inline-block;padding:10px 22px" href="https://discord.gg/rfshop" target="_blank">Rejoindre Discord</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT USER (admin) -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-box" style="text-align:left">
+    <div class="modal-title" style="margin-bottom:16px">✏️ Modifier le membre</div>
+    <input type="hidden" id="edit-username-key">
+    <div class="compte-field" style="margin-bottom:12px"><label class="compte-label">Plan</label>
+      <select id="edit-plan" style="width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;">
+        <option value="free">Free</option>
+        <option value="starter">Starter</option>
+        <option value="pro">Pro</option>
+        <option value="elite">Elite</option>
+      </select>
+    </div>
+    <div class="compte-field" style="margin-bottom:16px"><label class="compte-label">Statut</label>
+      <select id="edit-status" style="width:100%;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;">
+        <option value="actif">Actif</option>
+        <option value="banni">Banni</option>
+      </select>
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn-cancel" onclick="document.getElementById('edit-modal').classList.remove('show')">Annuler</button>
+      <button class="modal-btn-confirm" onclick="saveEditUser()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// STORAGE HELPERS (in-memory + localStorage simulation)
+// =============================================
+const ADMIN_USER = { username:'admin', password:'Drk$3cur3!2024', email:'admin@darksearch.fr', plan:'admin', role:'admin', since: new Date().toLocaleDateString('fr-FR'), searches:0, status:'actif' };
+
+function getUsers(){
+  try{ const d=localStorage.getItem('ds_users'); return d?JSON.parse(d):{'admin':ADMIN_USER}; }
+  catch(e){ return {'admin':ADMIN_USER}; }
+}
+
+function saveUsers(users){
+  try{ localStorage.setItem('ds_users',JSON.stringify(users)); }catch(e){}
+}
+
+function getSession(){
+  try{ const d=localStorage.getItem('ds_session'); return d?JSON.parse(d):null; }catch(e){ return null; }
+}
+
+function setSession(user){
+  try{ localStorage.setItem('ds_session',JSON.stringify(user)); }catch(e){}
+}
+
+function clearSession(){
+  try{ localStorage.removeItem('ds_session'); }catch(e){}
+}
+
+// Init admin user if not exists
+(function(){
+  const users=getUsers();
+  if(!users['admin']) users['admin']=ADMIN_USER;
+  saveUsers(users);
+})();
+
+// =============================================
+// LOGIN PROTECTION
+// =============================================
+let loginAttempts=0; let loginBlocked=false; let blockTimer=null;
+
+function doLogin(){
+  if(loginBlocked){ showLoginError('Trop de tentatives. Réessayez dans 30 secondes.'); return; }
+  const user=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!user||!pass){ showLoginError('Veuillez remplir tous les champs.'); return; }
+
+  const users=getUsers();
+  const account=users[user.toLowerCase()];
+
+  if(!account || account.password!==pass){
+    loginAttempts++;
+    const rem=5-loginAttempts;
+    if(loginAttempts>=5){
+      loginBlocked=true;
+      showLoginError('Compte bloqué pour 30 secondes suite à trop de tentatives.');
+      document.getElementById('login-attempts-info').textContent='';
+      blockTimer=setTimeout(()=>{ loginBlocked=false; loginAttempts=0; document.getElementById('login-attempts-info').textContent=''; document.getElementById('login-error').classList.remove('show'); },30000);
+    } else {
+      showLoginError('Identifiant ou mot de passe incorrect.');
+      document.getElementById('login-attempts-info').textContent=`${rem} tentative(s) restante(s)`;
+    }
+    return;
+  }
+
+  if(account.status==='banni'){ showLoginError('Votre compte a été banni. Contactez un administrateur.'); return; }
+
+  loginAttempts=0;
+  // Reset daily searches if new day
+  const today=new Date().toDateString();
+  if(account.lastSearchDay!==today){ account.searches=0; account.lastSearchDay=today; }
+  users[user.toLowerCase()]=account;
+  saveUsers(users);
+  setSession(account);
+  enterApp(account);
+}
+
+function showLoginError(msg){
+  const el=document.getElementById('login-error');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+// =============================================
+// REGISTER
+// =============================================
+function checkUsername(){
+  const val=document.getElementById('reg-user').value.trim().toLowerCase();
+  if(!val) return;
+  const users=getUsers();
+  if(users[val]){ showRegError('Cet identifiant est déjà pris.'); }
+  else { document.getElementById('reg-error').classList.remove('show'); }
+}
+
+function checkPassStrength(){
+  const p=document.getElementById('reg-pass').value;
+  const bar=document.getElementById('pass-strength');
+  let score=0;
+  if(p.length>=8) score++;
+  if(/[A-Z]/.test(p)) score++;
+  if(/[0-9]/.test(p)) score++;
+  if(/[^A-Za-z0-9]/.test(p)) score++;
+  const colors=['#e01c24','#ff6b35','#ffa500','#22c55e'];
+  const widths=['25%','50%','75%','100%'];
+  bar.style.background=score?colors[score-1]:'var(--dark4)';
+  bar.style.width=score?widths[score-1]:'100%';
+}
+
+function showRegError(msg){ const el=document.getElementById('reg-error'); el.textContent=msg; el.classList.add('show'); }
+
+function doRegister(){
+  const username=document.getElementById('reg-user').value.trim().toLowerCase();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+
+  if(!username||!email||!pass||!pass2){ showRegError('Veuillez remplir tous les champs.'); return; }
+  if(username.length<3){ showRegError("L'identifiant doit faire au moins 3 caractères."); return; }
+  if(!/^[a-z0-9_]+$/.test(username)){ showRegError("L'identifiant ne peut contenir que des lettres, chiffres et _"); return; }
+  if(pass.length<8){ showRegError('Le mot de passe doit faire au moins 8 caractères.'); return; }
+  if(pass!==pass2){ showRegError('Les mots de passe ne correspondent pas.'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showRegError('Email invalide.'); return; }
+
+  const users=getUsers();
+  if(users[username]){ showRegError('Cet identifiant est déjà pris.'); return; }
+
+  const newUser={ username, email, password:pass, plan:'free', role:'user', since:new Date().toLocaleDateString('fr-FR'), searches:0, lastSearchDay:new Date().toDateString(), status:'actif' };
+  users[username]=newUser;
+  saveUsers(users);
+
+  document.getElementById('reg-error').classList.remove('show');
+  const s=document.getElementById('reg-success'); s.textContent='Compte créé ! Vous pouvez maintenant vous connecter.'; s.classList.add('show');
+  setTimeout(()=>{ s.classList.remove('show'); showLogin(); },2000);
+}
+
+// =============================================
+// APP ENTRY
+// =============================================
+function enterApp(account){
+  document.getElementById('login-page').classList.remove('show');
+  document.getElementById('register-page').classList.remove('show');
+  document.getElementById('topbar').style.display='flex';
+  document.getElementById('main-app').style.display='block';
+
+  // Set UI
+  document.getElementById('topbar-username').textContent=account.username;
+  document.getElementById('topbar-avatar').textContent=account.username[0].toUpperCase();
+  document.getElementById('home-username').textContent=account.username;
+  document.getElementById('compte-username').textContent=account.username;
+  document.getElementById('compte-email').textContent=account.email;
+  document.getElementById('compte-plan').textContent=account.plan.toUpperCase();
+  document.getElementById('compte-since').textContent=account.since;
+
+  // Plan badge
+  const planBadge=document.getElementById('topbar-plan-badge');
+  const homePlanBadge=document.getElementById('home-plan-badge');
+  const planClasses={'free':'badge-free-top plan-free','starter':'badge-starter plan-starter','pro':'badge-pro-top plan-pro','elite':'badge-elite-top plan-elite','admin':'badge-admin-top plan-elite'};
+  planBadge.className='topbar-badge '+(planClasses[account.plan]||'badge-free-top');
+  planBadge.textContent=account.plan.toUpperCase();
+  homePlanBadge.className='plan-badge-home '+(planClasses[account.plan]||'plan-free');
+  homePlanBadge.textContent=account.plan.toUpperCase();
+
+  // Admin nav
+  if(account.role==='admin') document.getElementById('admin-nav-btn').style.display='block';
+  else document.getElementById('admin-nav-btn').style.display='none';
+
+  // Searches display
+  updateSearchDisplay(account);
+
+  // Counters
+  animCount(document.getElementById('counter1'),2698714570);
+  animCount(document.getElementById('counter2'),113932581);
+
+  // Admin stats
+  if(account.role==='admin') refreshAdminTable();
+}
+
+function updateSearchDisplay(account){
+  const limit=getSearchLimit(account.plan);
+  const used=account.searches||0;
+  document.getElementById('counter-searches').textContent=used;
+  document.getElementById('compte-searches').textContent=limit===Infinity?used+' (illimité)':used+' / '+limit;
+  document.getElementById('searches-label').textContent=limit===Infinity?'Recherches aujourd\'hui':'Recherches ('+limit+'/j max)';
+}
+
+function getSearchLimit(plan){
+  const limits={free:10,starter:100,pro:Infinity,elite:Infinity,admin:Infinity};
+  return limits[plan]||10;
+}
+
+function doLogout(){
+  clearSession();
+  DB_CACHE = null;
+  location.reload();
+}
+
+// Auto-login if session exists
+window.addEventListener('load',()=>{
+  const sess=getSession();
+  if(sess){
+    const users=getUsers();
+    const fresh=users[sess.username];
+    if(fresh&&fresh.status!=='banni') enterApp(fresh);
+  }
+  initParticles();
+  initSnake();
+});
+
+// =============================================
+// NAV
+// =============================================
+function showPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); }
+function topNav(el,page){
+  document.querySelectorAll('.top-nav-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active'); showPage(page);
+  if(page==='admin') refreshAdminTable();
+}
+function showLogin(){ document.getElementById('register-page').classList.remove('show'); document.getElementById('login-page').classList.add('show'); }
+function showRegister(){ document.getElementById('login-page').classList.remove('show'); document.getElementById('register-page').classList.add('show'); }
+
+// =============================================
+// DATA ENGINE — lit JSON / TXT / SQL depuis /data/
+// =============================================
+let DB_CACHE = null;
+
+// =============================================
+// SERVER URL MANAGEMENT — GitHub + ngrok
+// =============================================
+
+// GitHub config stored locally (only admin needs it)
+function getGhConfig() {
+  try { return JSON.parse(localStorage.getItem('ds_gh_config')||'{}'); } catch(e){ return {}; }
+}
+function saveGithubConfig() {
+  const user  = document.getElementById('gh-user').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const token = document.getElementById('gh-token').value.trim();
+  if(!user||!repo||!token){ showGhMsg('⚠️ Remplis tous les champs.','orange'); return; }
+  localStorage.setItem('ds_gh_config', JSON.stringify({user,repo,token}));
+  showGhMsg('✅ Config GitHub sauvegardée !','#22c55e');
+}
+function showGhMsg(msg,color){
+  const el=document.getElementById('gh-config-msg');
+  if(!el)return; el.textContent=msg; el.style.color=color; el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+// The config.json raw URL that ALL visitors fetch
+function getConfigUrl() {
+  const cfg = getGhConfig();
+  if(!cfg.user||!cfg.repo) return null;
+  return `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/main/config.json`;
+}
+
+// Get server URL — fetched from GitHub config.json (shared by everyone)
+let CACHED_SERVER_URL = null;
+async function getServerUrl() {
+  if(CACHED_SERVER_URL) return CACHED_SERVER_URL;
+  const configUrl = getConfigUrl();
+  if(!configUrl) return '';
+  try {
+    const res = await fetch(configUrl + '?t=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) return '';
+    const cfg = await res.json();
+    CACHED_SERVER_URL = (cfg.serverUrl||'').replace(/\/+$/,'');
+    return CACHED_SERVER_URL;
+  } catch(e){ return ''; }
+}
+
+// Push new URL to GitHub config.json via API
+async function pushUrlToGithub(url) {
+  const cfg = getGhConfig();
+  if(!cfg.user||!cfg.repo||!cfg.token){
+    showServerMsg('❌ Configure d\'abord GitHub (username, repo, token) ci-dessus.','var(--red-bright)');
+    return false;
+  }
+  const apiUrl = `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents/config.json`;
+  const content = { serverUrl: url, updatedAt: new Date().toISOString() };
+  const encoded = btoa(JSON.stringify(content, null, 2));
+
+  // Get current SHA (needed to update existing file)
+  let sha = null;
+  try {
+    const get = await fetch(apiUrl, { headers:{ Authorization:'token '+cfg.token, Accept:'application/vnd.github.v3+json' } });
+    if(get.ok){ const d=await get.json(); sha=d.sha; }
+  } catch(e){}
+
+  const body = { message: 'Update server URL', content: encoded };
+  if(sha) body.sha = sha;
+
+  try {
+    const res = await fetch(apiUrl, {
+      method:'PUT',
+      headers:{ Authorization:'token '+cfg.token, Accept:'application/vnd.github.v3+json', 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(res.ok){
+      CACHED_SERVER_URL = url;
+      return true;
+    } else {
+      const err = await res.json();
+      showServerMsg('❌ GitHub API: ' + (err.message||'Erreur inconnue'), 'var(--red-bright)');
+      return false;
+    }
+  } catch(e){
+    showServerMsg('❌ Erreur réseau GitHub: ' + e.message, 'var(--red-bright)');
+    return false;
+  }
+}
+
+async function updateServerUrlDisplay() {
+  const el = document.getElementById('current-server-url');
+  const inp = document.getElementById('ngrok-url-input');
+  const url = await getServerUrl();
+  if(el) el.textContent = url || 'Non configuré';
+  if(inp && url) inp.value = url;
+  // Pre-fill GitHub config inputs
+  const cfg = getGhConfig();
+  if(cfg.user) { const e=document.getElementById('gh-user'); if(e) e.value=cfg.user; }
+  if(cfg.repo) { const e=document.getElementById('gh-repo'); if(e) e.value=cfg.repo; }
+  if(cfg.token) { const e=document.getElementById('gh-token'); if(e) e.value=cfg.token; }
+}
+
+async function testServerUrl() {
+  const inp = document.getElementById('ngrok-url-input');
+  const url = ((inp?inp.value:null) || await getServerUrl()).trim().replace(/\/+$/,'');
+  if(!url){ showServerMsg('⚠️ Entre une URL d\'abord.','orange'); return; }
+  showServerMsg('⏳ Test en cours...','#888');
+  try {
+    const res = await fetch(url+'/data/index.json',{signal:AbortSignal.timeout(6000)});
+    if(res.ok){
+      const idx=await res.json();
+      showServerMsg('✅ Connexion réussie ! '+(idx.files?idx.files.length+' fichier(s) trouvé(s)':''),'#22c55e');
+      setBadge('success');
+    } else {
+      showServerMsg('❌ Serveur répond mais /data/index.json introuvable (HTTP '+res.status+')','var(--red-bright)');
+      setBadge('error');
+    }
+  } catch(e){
+    showServerMsg('❌ Serveur inaccessible. Ngrok lancé ? PC allumé ?','var(--red-bright)');
+    setBadge('error');
+  }
+}
+
+async function testAndSaveServer() {
+  const inp = document.getElementById('ngrok-url-input');
+  const url = (inp?inp.value:'').trim().replace(/\/+$/,'');
+  if(!url){ showServerMsg('⚠️ Entre une URL d\'abord.','orange'); return; }
+  showServerMsg('⏳ Publication sur GitHub en cours...','#7289da');
+  const ok = await pushUrlToGithub(url);
+  if(ok){
+    CACHED_SERVER_URL = url;
+    DB_CACHE = null;
+    showServerMsg('✅ URL publiée sur GitHub ! Tous les visiteurs vont utiliser cette adresse.','#22c55e');
+    setBadge('success');
+    updateServerUrlDisplay();
+  }
+}
+
+function showServerMsg(msg,color){
+  const el=document.getElementById('server-test-msg');
+  if(!el)return; el.textContent=msg; el.style.color=color; el.style.display='block';
+}
+function setBadge(state){
+  const b=document.getElementById('server-status-badge');
+  if(!b)return;
+  if(state==='success'){ b.textContent='✅ EN LIGNE'; b.style.background='rgba(34,197,94,0.1)'; b.style.borderColor='rgba(34,197,94,0.4)'; b.style.color='#22c55e'; }
+  else{ b.textContent='❌ HORS LIGNE'; b.style.background='rgba(224,28,36,0.1)'; b.style.borderColor='var(--border)'; b.style.color='var(--red-bright)'; }
+}
+
+async function loadAllData() {
+  if(DB_CACHE) return DB_CACHE;
+  DB_CACHE = [];
+  const warn = document.getElementById('search-limit-warn');
+  const baseUrl = await getServerUrl();
+
+  if(!baseUrl){
+    if(warn){ warn.textContent='⚠️ Aucun serveur configuré. L\'administrateur doit configurer l\'URL ngrok dans le panel admin.'; warn.classList.add('show'); }
+    return DB_CACHE;
+  }
+
+  try {
+    const idxRes = await fetch(baseUrl+'/data/index.json',{signal:AbortSignal.timeout(10000)});
+    if(!idxRes.ok) throw new Error('index.json introuvable');
+    const idx = await idxRes.json();
+    if(warn) warn.classList.remove('show');
+    const results = await Promise.allSettled(idx.files.map(f=>loadFile(f,baseUrl)));
+    results.forEach(r=>{ if(r.status==='fulfilled') DB_CACHE.push(...r.value); });
+  } catch(e){
+    console.warn('Erreur data:',e);
+    if(warn){ warn.textContent='❌ Impossible de joindre le serveur. Vérifiez que ngrok et Python tournent sur votre PC.'; warn.classList.add('show'); }
+  }
+  return DB_CACHE;
+}
+
+async function loadFile(fname, baseUrl) {
+  const url = baseUrl + '/data/' + fname;
+  let res = await fetch(url, { signal: AbortSignal.timeout(30000) }).catch(()=>null);
+  if (!res || !res.ok) return [];
+  const text = await res.text();
+  const ext = fname.split('.').pop().toLowerCase();
+  const label = fname.replace(/\.[^.]+$/, '');
+  let records = [];
+  if (ext === 'json') records = parseJSON(text);
+  else if (ext === 'txt' || ext === 'csv') records = parseTXT(text);
+  else if (ext === 'sql') records = parseSQL(text);
+  return records.map(r => ({ ...r, _sourceFile: label, _sourceExt: ext.toUpperCase() }));
+}
+
+function parseJSON(text) {
+  try {
+    const data = JSON.parse(text);
+    const arr = Array.isArray(data) ? data : (data.data || data.users || data.records || []);
+    return arr.map(r => normalizeRecord(r));
+  } catch(e) { return []; }
+}
+
+function parseTXT(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes('|') ? '|' : lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    const vals = line.split(sep);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+    return normalizeRecord(obj);
+  }).filter(r => r.nom || r.email || r.telephone);
+}
+
+function parseSQL(text) {
+  const records = [];
+  // Match INSERT INTO ... VALUES (...)
+  const insertReg = /INSERT\s+INTO\s+\w+\s*\([^)]+\)\s*VALUES\s*\(([^;]+)\);/gi;
+  const colReg = /INSERT\s+INTO\s+\w+\s*\(([^)]+)\)/i;
+  let match;
+  while ((match = insertReg.exec(text)) !== null) {
+    // Get columns from this INSERT
+    const colMatch = colReg.exec(match[0]);
+    if (!colMatch) continue;
+    const cols = colMatch[1].split(',').map(c => c.trim().toLowerCase().replace(/`|"|'/g,''));
+    // Parse values
+    const valStr = match[1];
+    const vals = [];
+    let cur = '', inStr = false, strChar = '';
+    for (let c of valStr) {
+      if (!inStr && (c === "'" || c === '"')) { inStr = true; strChar = c; }
+      else if (inStr && c === strChar) { inStr = false; }
+      else if (!inStr && c === ',') { vals.push(cur.trim()); cur = ''; continue; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    cols.forEach((col, i) => { obj[col] = (vals[i] || '').replace(/^'|'$/g,'').replace(/^"|"$/g,'').trim(); });
+    const rec = normalizeRecord(obj);
+    if (rec.nom || rec.email || rec.telephone) records.push(rec);
+  }
+  return records;
+}
+
+function normalizeRecord(obj) {
+  // Normalize common field name variants
+  const aliases = {
+    nom: ['nom','name','lastname','last_name','surname','famille'],
+    prenom: ['prenom','prénom','firstname','first_name','given_name'],
+    dateNaissance: ['datenaissance','date_naissance','dob','birthdate','birth_date','naissance'],
+    telephone: ['telephone','téléphone','phone','tel','mobile','portable'],
+    email: ['email','mail','e-mail','courriel'],
+    adresse: ['adresse','address','addr'],
+    ville: ['ville','city','town'],
+    codePostal: ['codepostal','code_postal','postal_code','zip','zipcode'],
+    pays: ['pays','country'],
+    profession: ['profession','job','metier','métier','occupation','poste'],
+    username: ['username','pseudo','login','user','identifiant'],
+    ip: ['ip','ip_address','adresse_ip'],
+    statut: ['statut','status','etat','état'],
+    nationalite: ['nationalite','nationalité','nationality']
+  };
+  const result = {};
+  const lowerObj = {};
+  Object.keys(obj).forEach(k => lowerObj[k.toLowerCase()] = obj[k]);
+  Object.entries(aliases).forEach(([field, variants]) => {
+    for (const v of variants) {
+      if (lowerObj[v] !== undefined) { result[field] = lowerObj[v]; break; }
+    }
+  });
+  // Copy any remaining fields not mapped
+  Object.keys(lowerObj).forEach(k => {
+    const mapped = Object.values(aliases).flat().includes(k);
+    if (!mapped) result[k] = lowerObj[k];
+  });
+  return result;
+}
+
+function matchRecord(p, filters) {
+  const { nom, prenom, jour, mois, annee, tel, email, ville, cp, username, ip } = filters;
+  const [d, m, y] = (p.dateNaissance || '').split('/');
+  return (
+    (!nom     || (p.nom||'').toLowerCase().includes(nom)) &&
+    (!prenom  || (p.prenom||'').toLowerCase().includes(prenom)) &&
+    (!jour    || d === jour.padStart(2,'0')) &&
+    (!mois    || m === mois.padStart(2,'0')) &&
+    (!annee   || y === annee) &&
+    (!tel     || (p.telephone||'').includes(tel)) &&
+    (!email   || (p.email||'').toLowerCase().includes(email)) &&
+    (!ville   || (p.ville||'').toLowerCase().includes(ville)) &&
+    (!cp      || (p.codePostal||'').includes(cp)) &&
+    (!username|| (p.username||'').toLowerCase().includes(username)) &&
+    (!ip      || (p.ip||'').includes(ip))
+  );
+}
+
+// =============================================
+// SEARCH
+// =============================================
+function switchTab(el,id){ document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); el.classList.add('active'); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('results-section').style.display='none'; }
+function getVal(id){ const e=document.getElementById(id); return e?e.value.trim().toLowerCase():''; }
+
+async function doSearch(){
+  const sess=getSession(); if(!sess) return;
+  const users=getUsers();
+  const account=users[sess.username];
+  const limit=getSearchLimit(account.plan);
+  const today=new Date().toDateString();
+  if(account.lastSearchDay!==today){ account.searches=0; account.lastSearchDay=today; }
+
+  if(account.searches>=limit && limit!==Infinity){
+    const warn=document.getElementById('search-limit-warn');
+    warn.textContent=`⚠️ Limite atteinte (${limit} recherches/jour). Passez au plan supérieur pour continuer.`;
+    warn.classList.add('show');
+    return;
+  }
+
+  const filters = {
+    nom: getVal('s-nom'), prenom: getVal('s-prenom'),
+    jour: getVal('s-jour'), mois: getVal('s-mois'), annee: getVal('s-annee'),
+    tel: getVal('s-telephone'), email: getVal('s-email'),
+    ville: getVal('s-ville'), cp: getVal('s-cp'),
+    username: getVal('s-username'), ip: getVal('s-ip')
+  };
+
+  if(!Object.values(filters).some(v=>v)){ alert('Veuillez renseigner au moins un critère.'); return; }
+
+  document.getElementById('search-limit-warn').classList.remove('show');
+  const sec=document.getElementById('results-section'), lst=document.getElementById('results-list');
+  sec.style.display='block';
+  lst.innerHTML=`<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Chargement des données...</div></div>`;
+
+  account.searches=(account.searches||0)+1;
+  users[sess.username]=account;
+  saveUsers(users);
+  setSession(account);
+  updateSearchDisplay(account);
+
+  // Load all data files then filter
+  const db = await loadAllData();
+  const res = db.filter(p => matchRecord(p, filters));
+
+  document.getElementById('results-count').textContent = res.length + ' résultat' + (res.length > 1 ? 's' : '');
+
+  if(!res.length){
+    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat trouvé</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Essayez d'élargir vos critères</div></div>`;
+    return;
+  }
+
+  lst.innerHTML = res.map((p, idx) => {
+    const nom = p.nom || '?';
+    const prenom = p.prenom || '?';
+    const ini = ((prenom[0]||'?') + (nom[0]||'?')).toUpperCase();
+    const sc = (p.statut||'').toLowerCase() === 'actif' ? 'status-active' : 'status-inactive';
+    const f = (l,v,h=false) => `<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'highlight':''}">${v||'—'}</div></div>`;
+    // Source file badge
+    const srcLabel = p._sourceFile || 'inconnu';
+    const srcExt = p._sourceExt || '';
+    const extColors = {JSON:'rgba(34,197,94,0.15)|rgba(34,197,94,0.4)|#22c55e', TXT:'rgba(100,100,255,0.15)|rgba(100,100,255,0.4)|#7289da', SQL:'rgba(255,165,0,0.15)|rgba(255,165,0,0.4)|#ffa500', CSV:'rgba(100,200,100,0.15)|rgba(100,200,100,0.4)|#88cc88'};
+    const [bg,border,color] = (extColors[srcExt]||'rgba(136,136,136,0.15)|rgba(136,136,136,0.3)|#888').split('|');
+    const srcBadge = `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;">📂 ${srcLabel} <span style="opacity:0.7">.${srcExt.toLowerCase()}</span></span>`;
+    // Collect extra fields, exclude internal
+    const known = ['nom','prenom','dateNaissance','telephone','email','adresse','ville','codePostal','pays','profession','username','ip','statut','nationalite','_sourceFile','_sourceExt'];
+    const extra = Object.keys(p).filter(k => !known.includes(k) && p[k]);
+    return `<div class="result-card">
+      <div class="result-card-header">
+        <div class="result-person">
+          <div class="result-avatar">${ini}</div>
+          <div>
+            <div class="result-name">${prenom} ${nom}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <div class="result-id">#${String(idx+1).padStart(6,'0')}</div>
+              ${srcBadge}
+            </div>
+          </div>
+        </div>
+        <span class="result-status ${sc}">${p.statut||'Inconnu'}</span>
+      </div>
+      <div class="result-grid">
+        ${f('📅 Naissance', p.dateNaissance)}
+        ${f('📞 Téléphone', p.telephone, true)}
+        ${f('💼 Profession', p.profession)}
+        ${f('📧 Email', p.email, true)}
+        ${f('🏠 Adresse', p.adresse)}
+        ${f('🏙️ Ville', [p.ville, p.codePostal].filter(Boolean).join(' '))}
+        ${f('🌍 Pays', p.pays)}
+        ${f('🪪 Nationalité', p.nationalite)}
+        ${f('👤 Username', p.username ? '@'+p.username : null, true)}
+        ${f('💻 IP', p.ip, true)}
+        ${extra.map(k => f('📌 '+k, p[k])).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =============================================
+// CHANGE PASSWORD
+// =============================================
+function changePassword(){
+  const current=document.getElementById('pass-current').value;
+  const newPass=document.getElementById('pass-new').value;
+  const confirm=document.getElementById('pass-confirm').value;
+  const err=document.getElementById('pass-error');
+  const suc=document.getElementById('pass-success');
+  err.style.display='none'; suc.style.display='none';
+
+  const sess=getSession(); if(!sess) return;
+  const users=getUsers();
+  const account=users[sess.username];
+
+  if(account.password!==current){ err.textContent='Mot de passe actuel incorrect.'; err.style.display='block'; return; }
+  if(newPass.length<8){ err.textContent='Le nouveau mot de passe doit faire au moins 8 caractères.'; err.style.display='block'; return; }
+  if(newPass!==confirm){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
+
+  account.password=newPass;
+  users[sess.username]=account;
+  saveUsers(users);
+  setSession(account);
+  document.getElementById('pass-current').value='';
+  document.getElementById('pass-new').value='';
+  document.getElementById('pass-confirm').value='';
+  suc.textContent='✅ Mot de passe changé avec succès !'; suc.style.display='block';
+  setTimeout(()=>suc.style.display='none',3000);
+}
+
+// =============================================
+// ADMIN
+// =============================================
+function refreshAdminTable(){
+  updateServerUrlDisplay();
+  const users=getUsers();
+  const all=Object.values(users);
+  document.getElementById('admin-total-users').textContent=all.length;
+  document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
+  document.getElementById('admin-free-users').textContent=all.filter(u=>u.plan==='free').length;
+  document.getElementById('admin-searches-total').textContent=all.reduce((a,u)=>a+(u.searches||0),0);
+  renderAdminTable(all);
+}
+
+function renderAdminTable(users){
+  const planBadgeMap={free:'plan-badge plan-free',starter:'plan-badge plan-starter',pro:'plan-badge plan-pro',elite:'plan-badge plan-elite',admin:'plan-badge plan-elite'};
+  const tbody=document.getElementById('admin-table-body');
+  tbody.innerHTML=users.map(u=>`
+    <tr>
+      <td style="font-family:'Orbitron',monospace;font-size:12px;color:white">${u.username}</td>
+      <td>${u.email||'—'}</td>
+      <td><span class="${planBadgeMap[u.plan]||'plan-badge plan-free'}">${u.plan.toUpperCase()}</span></td>
+      <td style="font-family:'Orbitron',monospace;font-size:12px">${u.searches||0}</td>
+      <td>${u.since||'—'}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;${u.status==='banni'?'background:rgba(224,28,36,0.15);color:var(--red-bright);border:1px solid var(--border)':'background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.3)'}">${u.status||'actif'}</span></td>
+      <td>${u.role!=='admin'?`<button class="admin-action-btn btn-edit" onclick="editUser('${u.username}')">✏️ Modifier</button><button class="admin-action-btn btn-delete" onclick="deleteUser('${u.username}')">🗑️ Supprimer</button>`:'<span style="color:var(--text-faint);font-size:11px">Admin protégé</span>'}</td>
+    </tr>`).join('');
+}
+
+function filterAdminTable(){
+  const q=document.getElementById('admin-search').value.toLowerCase();
+  const users=Object.values(getUsers());
+  const filtered=users.filter(u=>u.username.includes(q)||(u.email||'').includes(q)||(u.plan||'').includes(q));
+  renderAdminTable(filtered);
+}
+
+function editUser(username){
+  const users=getUsers();
+  const u=users[username];
+  document.getElementById('edit-username-key').value=username;
+  document.getElementById('edit-plan').value=u.plan;
+  document.getElementById('edit-status').value=u.status||'actif';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function saveEditUser(){
+  const username=document.getElementById('edit-username-key').value;
+  const plan=document.getElementById('edit-plan').value;
+  const status=document.getElementById('edit-status').value;
+  const users=getUsers();
+  users[username].plan=plan;
+  users[username].status=status;
+  saveUsers(users);
+  document.getElementById('edit-modal').classList.remove('show');
+  refreshAdminTable();
+}
+
+function deleteUser(username){
+  if(!confirm(`Supprimer le compte "${username}" ? Cette action est irréversible.`)) return;
+  const users=getUsers();
+  delete users[username];
+  saveUsers(users);
+  refreshAdminTable();
+}
+
+// =============================================
+// ABONNEMENT TOGGLE
+// =============================================
+let annual=false;
+function toggleBill(){
+  annual=!annual;
+  document.getElementById('bill-tog').classList.toggle('on',annual);
+  document.getElementById('lbl-m').classList.toggle('active',!annual);
+  document.getElementById('lbl-a').classList.toggle('active',annual);
+  if(annual){
+    document.getElementById('starter-price').textContent='8';document.getElementById('starter-period').textContent='/ mois · facturation annuelle';document.getElementById('starter-annual').textContent='soit 96€/an (économisez 24€)';
+    document.getElementById('pro-price').textContent='20';document.getElementById('pro-period').textContent='/ mois · facturation annuelle';document.getElementById('pro-annual').textContent='soit 240€/an (économisez 60€)';
+    document.getElementById('elite-price').textContent='64';document.getElementById('elite-period').textContent='/ mois · facturation annuelle';document.getElementById('elite-annual').textContent='soit 768€/an (économisez 192€)';
+  } else {
+    document.getElementById('starter-price').textContent='10';document.getElementById('starter-period').textContent='/ mois · facturation mensuelle';document.getElementById('starter-annual').textContent=' ';
+    document.getElementById('pro-price').textContent='25';document.getElementById('pro-period').textContent='/ mois · facturation mensuelle';document.getElementById('pro-annual').textContent=' ';
+    document.getElementById('elite-price').textContent='80';document.getElementById('elite-period').textContent='/ mois · facturation mensuelle';document.getElementById('elite-annual').textContent=' ';
+  }
+}
+function openModal(name){ document.getElementById('modal-plan-name').textContent=name; document.getElementById('plan-modal').classList.add('show'); }
+document.getElementById('plan-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('show'); });
+document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('show'); });
+
+// =============================================
+// PARTICLES
+// =============================================
+function initParticles(){
+  const canvas=document.getElementById('particles-canvas'),ctx=canvas.getContext('2d');
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}resize();window.addEventListener('resize',resize);
+  const P=[];for(let i=0;i<70;i++)P.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*2+.5,a:Math.random()*.5+.1,red:Math.random()>.7});
+  function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);for(let i=0;i<P.length;i++){for(let j=i+1;j<P.length;j++){const dx=P[i].x-P[j].x,dy=P[i].y-P[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<110){ctx.strokeStyle=`rgba(224,28,36,${(1-d/110)*.1})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(P[i].x,P[i].y);ctx.lineTo(P[j].x,P[j].y);ctx.stroke();}}ctx.beginPath();ctx.arc(P[i].x,P[i].y,P[i].r,0,Math.PI*2);ctx.fillStyle=P[i].red?`rgba(224,28,36,${P[i].a})`:`rgba(255,255,255,${P[i].a*.3})`;ctx.fill();P[i].x+=P[i].vx;P[i].y+=P[i].vy;if(P[i].x<0||P[i].x>canvas.width)P[i].vx*=-1;if(P[i].y<0||P[i].y>canvas.height)P[i].vy*=-1;}requestAnimationFrame(draw);}draw();
+}
+
+// =============================================
+// COUNTER
+// =============================================
+function animCount(el,target){if(!el)return;let n=0;const step=Math.ceil(target/80);const t=setInterval(()=>{n+=step;if(n>=target){n=target;clearInterval(t);}el.textContent=n.toLocaleString('fr-FR');},20);}
+
+// =============================================
+// SNAKE GAME
+// =============================================
+function initSnake(){
+  const canvas=document.getElementById('snake-canvas');
+  const ctx=canvas.getContext('2d');
+  const W=340,H=280,CELL=20,COLS=W/CELL,ROWS=H/CELL;
+  let snake,dir,food,gameLoop,running,paused,score,best=0;
+
+  function reset(){
+    snake=[{x:10,y:7},{x:9,y:7},{x:8,y:7}];
+    dir={x:1,y:0};
+    food=randomFood();
+    score=0;
+    running=false;paused=false;
+    document.getElementById('snake-score').textContent=0;
+    draw();
+  }
+
+  function randomFood(){
+    let f;
+    do{ f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}; }
+    while(snake.some(s=>s.x===f.x&&s.y===f.y));
+    return f;
+  }
+
+  function draw(){
+    ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle='rgba(224,28,36,0.05)';ctx.lineWidth=.5;
+    for(let x=0;x<=W;x+=CELL){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<=H;y+=CELL){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // Snake
+    snake.forEach((s,i)=>{
+      const ratio=1-i/snake.length;
+      ctx.fillStyle=i===0?'#ff2d37':`rgba(224,28,36,${0.3+ratio*0.5})`;
+      ctx.beginPath();ctx.roundRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2,4);ctx.fill();
+      if(i===0){ ctx.shadowColor='#ff2d37';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0; }
+    });
+    // Food
+    ctx.fillStyle='#22c55e';ctx.shadowColor='#22c55e';ctx.shadowBlur=12;
+    ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2-2,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    // Overlay
+    if(!running&&!paused){
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='white';ctx.font="bold 16px 'Orbitron'";ctx.textAlign='center';
+      ctx.fillText('APPUYEZ SUR ▶ JOUER',W/2,H/2);
+      ctx.font="12px 'Rajdhani'";ctx.fillStyle='#888';ctx.fillText('Utilisez les flèches ou ZQSD',W/2,H/2+24);
+    }
+    if(paused){
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='white';ctx.font="bold 18px 'Orbitron'";ctx.textAlign='center';
+      ctx.fillText('PAUSE',W/2,H/2);
+    }
+  }
+
+  function step(){
+    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snake.some(s=>s.x===head.x&&s.y===head.y)){
+      gameOver();return;
+    }
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){
+      score++;
+      if(score>best)best=score;
+      document.getElementById('snake-score').textContent=score;
+      document.getElementById('snake-best').textContent=best;
+      food=randomFood();
+    } else { snake.pop(); }
+    draw();
+  }
+
+  function gameOver(){
+    running=false;clearInterval(gameLoop);
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff2d37';ctx.font="bold 20px 'Orbitron'";ctx.textAlign='center';ctx.fillText('GAME OVER',W/2,H/2-10);
+    ctx.fillStyle='white';ctx.font="14px 'Rajdhani'";ctx.fillText('Score: '+score,W/2,H/2+14);
+    ctx.fillStyle='#888';ctx.font="11px 'Rajdhani'";ctx.fillText('Appuyez ▶ pour rejouer',W/2,H/2+34);
+  }
+
+  window.startSnake=function(){
+    if(paused){paused=false;gameLoop=setInterval(step,130);return;}
+    if(running) return;
+    reset();running=true;
+    gameLoop=setInterval(step,130);
+  };
+  window.pauseSnake=function(){
+    if(!running)return;
+    paused=!paused;
+    if(paused)clearInterval(gameLoop);
+    else gameLoop=setInterval(step,130);
+    draw();
+  };
+  window.resetSnake=function(){ clearInterval(gameLoop); reset(); };
+
+  const DIRS={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
+  document.addEventListener('keydown',e=>{
+    const d=DIRS[e.key]||DIRS[e.key.toLowerCase()];
+    if(d&&running&&!paused){
+      if(d.x!==-dir.x||d.y!==-dir.y) dir=d;
+      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+    }
+  });
+
+  reset();
+}
+</script>
+</body>
+</html>
