@@ -1321,9 +1321,33 @@ async function doSearch(){
   setSession(account);
   updateSearchDisplay(account);
 
-  // Load all data files then filter
-  const db = await loadAllData();
-  const res = db.filter(p => matchRecord(p, filters));
+  // Recherche côté serveur
+  const baseUrl = await getServerUrl();
+  if(!baseUrl){
+    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-text">Serveur non configuré</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">L'admin doit configurer l'URL ngrok dans le panel admin</div></div>`;
+    return;
+  }
+
+  // Build query string from filters
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k,v]) => { if(v) params.append(k, v); });
+
+  let res = [];
+  try {
+    const r = await fetch(baseUrl + '/search?' + params.toString(), {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30000),
+      headers: { 'ngrok-skip-browser-warning': 'true', 'Accept': 'application/json' }
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    res = data.results || [];
+  } catch(e) {
+    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur serveur</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message} — Vérifie que ngrok et Python tournent</div></div>`;
+    return;
+  }
 
   document.getElementById('results-count').textContent = res.length + ' résultat' + (res.length > 1 ? 's' : '');
 
