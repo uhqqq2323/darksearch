@@ -858,10 +858,33 @@ function _dw(){return [33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100
 const ADMIN_USER = { username:'admin', get password(){ return _dp(); }, set password(v){}, email:'admin@darksearch.fr', plan:'admin', role:'admin', since: new Date().toLocaleDateString('fr-FR'), searches:0, status:'actif' };
 
 function getUsers(){
-  try{ const d=localStorage.getItem('ds_users'); return d?JSON.parse(d):{'admin':ADMIN_USER}; }
-  catch(e){ return {'admin':ADMIN_USER}; }
+  try{
+    const d = localStorage.getItem('ds_users');
+    const users = d ? JSON.parse(d) : {};
+    // Toujours réinjecter l'admin avec son getter de mot de passe (ne se sérialise pas en JSON)
+    if(!users['admin'] || !users['admin'].password){
+      users['admin'] = Object.assign({}, users['admin'] || {}, ADMIN_USER);
+    } else {
+      // Préserver les champs admin depuis localStorage mais forcer le password depuis le code
+      const adminPwd = _dp();
+      if(users['admin'].password !== adminPwd){
+        users['admin'].password = adminPwd;
+      }
+    }
+    return users;
+  }
+  catch(e){ return {'admin': Object.assign({}, ADMIN_USER) }; }
 }
-function saveUsers(u){ try{ localStorage.setItem('ds_users',JSON.stringify(u)); }catch(e){} }
+function saveUsers(u){
+  try{
+    // Ne jamais sauvegarder le mot de passe admin en clair dans localStorage
+    const toSave = JSON.parse(JSON.stringify(u));
+    if(toSave['admin']) delete toSave['admin'].password;
+    localStorage.setItem('ds_users', JSON.stringify(toSave));
+  }catch(e){}
+  // Sync JSONBin auto (clé intégrée)
+  try{ syncUsersToJsonBin(u); }catch(e){}
+}
 function getSession(){ try{ const d=localStorage.getItem('ds_session'); return d?JSON.parse(d):null; }catch(e){ return null; } }
 function setSession(u){ try{ localStorage.setItem('ds_session',JSON.stringify(u)); }catch(e){} }
 function clearSession(){ try{ localStorage.removeItem('ds_session'); }catch(e){} }
@@ -943,28 +966,8 @@ function showLogin(){ document.getElementById('register-page').classList.remove(
 function showRegister(){ document.getElementById('login-page').classList.remove('show'); document.getElementById('register-page').classList.add('show'); }
 
 // ── Enter App ──
-function enterApp(account){
-  document.getElementById('login-page').classList.remove('show');
-  document.getElementById('register-page').classList.remove('show');
-  const app=document.getElementById('app');
-  app.style.display='block';
-  // topbar
-  document.getElementById('topbar-username').textContent=account.username;
-  document.getElementById('topbar-avatar-letter').textContent=account.username[0].toUpperCase();
-  const planEl=document.getElementById('topbar-plan-badge');
-  planEl.textContent=account.plan.toUpperCase();
-  planEl.className='tb-plan plan-'+account.plan;
-  if(account.role==='admin') document.getElementById('nav-admin-item').style.display='';
-  updateSearchDisplay(account);
-  initParticles();
-  initSnake();
-  startClock();
-  animCount(document.getElementById('stat-total'),50000000000);
-  animCount(document.getElementById('stat-sources'),4800);
-  animCount(document.getElementById('stat-uptime'),42);
-  const users=getUsers();
-  animCount(document.getElementById('stat-users'),Object.keys(users).length);
-}
+
+
 function logout(){ clearSession(); location.reload(); }
 
 function updateSearchDisplay(account){
@@ -1003,78 +1006,23 @@ function changePassword(){
 // ════════════════════════════════════════════
 // NAV
 // ════════════════════════════════════════════
-function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-}
+
+
 function topNav(el,page){
   document.querySelectorAll('.tb-nav-btn').forEach(i=>i.classList.remove('active'));
   el.classList.add('active'); showPage(page);
   if(page==='admin') refreshAdminTable();
 }
-function switchTab(el,id){
-  document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); document.getElementById('tab-'+id).classList.add('active');
-  document.getElementById('results-section').style.display='none';
-  document.getElementById('results-placeholder').style.display='flex';
-  document.getElementById('results-list').innerHTML='';
-}
+
+
 
 // ════════════════════════════════════════════
 // SEARCH — OathNet API via Cloudflare Worker
 // ════════════════════════════════════════════
 function _W(){ return _dw(); }
 
-async function doSearch(mode){
-  const sess=getSession(); if(!sess) return;
-  const users=getUsers(); const account=users[sess.username];
-  const limit=getSearchLimit(account.plan);
-  const today=new Date().toDateString();
-  if(account.lastSearchDay!==today){ account.searches=0; account.lastSearchDay=today; }
-  if(account.searches>=limit&&limit!==Infinity){
-    const w=document.getElementById('search-limit-warn');
-    w.textContent='⚠ LIMITE ATTEINTE ('+limit+'/jour) — Passez au plan supérieur.';
-    w.classList.add('show'); return;
-  }
-  let query='';
-  if(mode==='breach'){
-    const email=(document.getElementById('s-email')?.value||'').trim();
-    const tel=(document.getElementById('s-telephone')?.value||'').trim();
-    const username=(document.getElementById('s-username')?.value||'').trim();
-    const ip=(document.getElementById('s-ip')?.value||'').trim();
-    const nom=(document.getElementById('s-nom')?.value||'').trim().toLowerCase();
-    const prenom=(document.getElementById('s-prenom')?.value||'').trim().toLowerCase();
-    const domaine=(document.getElementById('s-domaine')?.value||'').trim();
-    query=email||tel||username||ip||domaine||(nom&&prenom?prenom+' '+nom:nom||prenom)||'';
-  } else if(mode==='stealer'){
-    query=(document.getElementById('s-stealer-q')?.value||'').trim();
-  } else if(mode==='osint'){
-    query=(document.getElementById('s-osint-q')?.value||'').trim();
-  }
-  if(!query){ alert('Veuillez renseigner au moins un critère.'); return; }
+async 
 
-  document.getElementById('search-limit-warn').classList.remove('show');
-  document.getElementById('results-section').style.display='block';
-  document.getElementById('results-placeholder').style.display='none';
-  const lst=document.getElementById('results-list');
-  lst.innerHTML=`<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours</div></div>`;
-
-  account.searches=(account.searches||0)+1;
-  users[sess.username]=account; saveUsers(users); setSession(account); updateSearchDisplay(account);
-
-  try {
-    const r=await fetch(`${_W()}?q=${encodeURIComponent(query)}&action=${mode}`,{
-      headers:{'Accept':'application/json'}, signal:AbortSignal.timeout(25000)
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    if(!data.success) throw new Error(data.error||'Erreur API');
-    renderResults(data.data,mode,query,lst);
-  } catch(e){
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">// ERREUR</div><div class="no-results-text">${e.message}</div></div>`;
-  }
-}
 
 function renderResults(data,mode,query,lst){
   const f=(l,v,h=false)=>v?`<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'hi':''}">${v}</div></div>`:'';
@@ -1158,14 +1106,8 @@ function renderResults(data,mode,query,lst){
 // ════════════════════════════════════════════
 // ADMIN
 // ════════════════════════════════════════════
-function refreshAdminTable(){
-  const users=getUsers(); const all=Object.values(users);
-  document.getElementById('admin-total-users').textContent=all.length;
-  document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
-  document.getElementById('admin-free-users').textContent=all.filter(u=>u.plan==='free').length;
-  document.getElementById('admin-searches-total').textContent=all.reduce((a,u)=>a+(u.searches||0),0);
-  renderAdminTable(all);
-}
+
+
 function renderAdminTable(users){
   const planColors={free:'var(--text3)',starter:'var(--cyan)',pro:'var(--amber)',elite:'var(--green)',admin:'var(--red)'};
   const tbody=document.getElementById('admin-table-body');
@@ -1396,27 +1338,12 @@ function snakePause(){ if(snakeState) snakeState.pause(); }
 // ════════════════════════════════════════════
 // SIDEBAR NAV
 // ════════════════════════════════════════════
-function sideNav(el, page) {
-  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
-  showPage(page);
-  if (page === 'admin') refreshAdminTable();
-}
+
+
 
 // Override enterApp to use sidebar
-const _origEnterApp = enterApp;
-function enterApp(account) {
-  _origEnterApp(account);
-  // Show admin sidebar item
-  if (account.role === 'admin') {
-    document.getElementById('sb-admin').style.display = '';
-  }
-  // Load notifications
-  renderNotifPanel();
-  // Set today date in notif date picker
-  const dp = document.getElementById('notif-new-date');
-  if (dp) dp.value = new Date().toISOString().split('T')[0];
-}
+
+
 
 // Override topNav to also update sidebar
 const _origTopNav = topNav;
@@ -1434,34 +1361,11 @@ function saveNotifications(n) {
   try { localStorage.setItem('ds_notifs', JSON.stringify(n)); } catch(e) {}
 }
 
-function renderNotifPanel() {
-  const notifs = getNotifications();
-  const unread = notifs.filter(n => !n.read);
-  const badge = document.getElementById('notif-badge');
-  if (unread.length > 0) {
-    badge.textContent = unread.length > 9 ? '9+' : unread.length;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
-  const list = document.getElementById('notif-list');
-  if (!notifs.length) { list.innerHTML = '<div class="notif-empty">// Aucune notification</div>'; return; }
-  const typeColors = { update: 'type-update', info: 'type-info', alert: 'type-alert', urgent: 'type-urgent' };
-  const typeLabels = { update: '🟢 MISE À JOUR', info: '🔵 INFO', alert: '🟡 ALERTE', urgent: '🔴 URGENT' };
-  list.innerHTML = [...notifs].reverse().map(n =>
-    `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n.id}')">
-      <div class="notif-item-type ${typeColors[n.type]||'type-info'}">${typeLabels[n.type]||n.type}</div>
-      <div class="notif-item-title">${n.title}</div>
-      <div class="notif-item-body">${n.body}</div>
-      <div class="notif-item-date">${n.date}</div>
-    </div>`
-  ).join('');
-}
 
-function toggleNotifPanel() {
-  const panel = document.getElementById('notif-panel');
-  panel.classList.toggle('show');
-}
+
+
+
+
 
 function markRead(id) {
   const notifs = getNotifications();
@@ -1519,11 +1423,8 @@ document.addEventListener('click', function(e) {
 });
 
 // Override refreshAdminTable to also render notifs
-const _origRefreshAdmin = refreshAdminTable;
-function refreshAdminTable() {
-  _origRefreshAdmin();
-  renderAdminNotifs();
-}
+
+
 
 // ════════════════════════════════════════════
 // GITHUB SYNC — Sauvegarde des comptes
@@ -1592,11 +1493,7 @@ async function syncUsersToGithub(users) {
 }
 
 // Hook into saveUsers to auto-sync
-const _origSaveUsers = saveUsers;
-function saveUsers(users) {
-  _origSaveUsers(users);
-  syncUsersToGithub(users);
-}
+// [github hook supprimé]
 
 // ════════════════════════════════════════════
 // ANTI DEVTOOLS PROTECTION
@@ -1682,55 +1579,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ══ Override enterApp for new UI ══
-const _origEnterApp2 = enterApp;
-function enterApp(account){
-  document.getElementById('login-page').classList.remove('show');
-  document.getElementById('register-page').classList.remove('show');
-  const app = document.getElementById('app');
-  app.style.display = 'block';
-  // Topbar
-  document.getElementById('topbar-avatar-letter').textContent = account.username[0].toUpperCase();
-  // Sidebar
-  document.getElementById('sb-avatar-letter').textContent = account.username[0].toUpperCase();
-  document.getElementById('sb-username').textContent = account.username;
-  document.getElementById('sb-usertag').textContent = '@' + account.username;
-  const planBadge = document.getElementById('sb-plan-badge');
-  planBadge.textContent = account.plan.charAt(0).toUpperCase() + account.plan.slice(1);
-  planBadge.className = 'sb-plan-badge plan-' + account.plan;
-  // Online count
-  const users = getUsers();
-  document.getElementById('online-count').textContent = Object.keys(users).length;
-  if(account.role === 'admin') document.getElementById('sb-admin').style.display = '';
-  updateSearchDisplay(account);
-  initSnake();
-  startClock();
-  animCount(document.getElementById('stat-total'), 50000000000);
-  animCount(document.getElementById('stat-sources'), 4800);
-  animCount(document.getElementById('stat-uptime'), 42);
-  animCount(document.getElementById('stat-users'), Object.keys(users).length);
-  renderNotifPanel();
-  const dp = document.getElementById('notif-new-date');
-  if(dp) dp.value = new Date().toISOString().split('T')[0];
-}
+
+
 
 // ══ Page transitions ══
-function showPage(id){
-  const current = document.querySelector('.page.active');
-  if(current) current.classList.remove('active');
-  const next = document.getElementById('page-'+id);
-  if(!next) return;
-  next.classList.add('active');
-  next.classList.add('page-enter');
-  setTimeout(() => next.classList.remove('page-enter'), 300);
-}
+
+
 
 // ══ Sidebar nav ══
-function sideNav(el, page){
-  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
-  showPage(page);
-  if(page === 'admin') refreshAdminTable();
-}
+
+
 
 // ══ Home tabs ══
 function switchHomeTab(el, tabId){
@@ -1739,17 +1597,8 @@ function switchHomeTab(el, tabId){
 }
 
 // ══ Search tabs override ══
-const _origSwitchTab = switchTab;
-function switchTab(el, id){
-  document.querySelectorAll('.search-type-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  const tab = document.getElementById('tab-'+id);
-  if(tab){ tab.classList.add('active'); tab.style.animation='slideInUp .25s ease'; setTimeout(()=>tab.style.animation='',300); }
-  document.getElementById('results-section').style.display='none';
-  document.getElementById('results-placeholder').style.display='flex';
-  document.getElementById('results-list').innerHTML='';
-}
+
+
 
 // ══ Pass strength for new UI ══
 const _origCheckPassStrength = checkPassStrength;
@@ -1770,25 +1619,10 @@ function checkPassStrength(){
 // ══ Notifications ══
 function getNotifications(){ try{ return JSON.parse(localStorage.getItem('ds_notifs')||'[]'); }catch(e){ return []; } }
 function saveNotifications(n){ try{ localStorage.setItem('ds_notifs',JSON.stringify(n)); }catch(e){} }
-function renderNotifPanel(){
-  const notifs = getNotifications();
-  const unread = notifs.filter(n => !n.read);
-  const badge = document.getElementById('notif-badge');
-  if(unread.length > 0){ badge.textContent = unread.length > 9 ? '9+' : unread.length; badge.classList.add('show'); }
-  else badge.classList.remove('show');
-  const list = document.getElementById('notif-list');
-  if(!notifs.length){ list.innerHTML = '<div class="notif-empty">Aucune notification</div>'; return; }
-  const typeColors = { update:'type-update', info:'type-info', alert:'type-alert', urgent:'type-urgent' };
-  const typeLabels = { update:'✅ Mise à jour', info:'ℹ️ Info', alert:'⚠️ Alerte', urgent:'🚨 Urgent' };
-  list.innerHTML = [...notifs].reverse().map(n =>
-    `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n.id}')">
-      <div class="ni-type ${typeColors[n.type]||'type-info'}">${typeLabels[n.type]||n.type}</div>
-      <div class="ni-title">${n.title}</div>
-      <div class="ni-body">${n.body}</div>
-      <div class="ni-date">${n.date}</div>
-    </div>`).join('');
-}
-function toggleNotifPanel(){ document.getElementById('notif-panel').classList.toggle('show'); }
+
+
+
+
 function markRead(id){ const n=getNotifications(); const x=n.find(i=>i.id===id); if(x){x.read=true;saveNotifications(n);renderNotifPanel();} }
 function markAllRead(){ const n=getNotifications(); n.forEach(x=>x.read=true); saveNotifications(n); renderNotifPanel(); }
 function addNotification(){
@@ -1844,11 +1678,11 @@ async function syncUsersToGithub(users){
   }catch(e){if(el)el.className='gh-dot err';if(txt)txt.textContent='Erreur: '+e.message;}
 }
 const _origSaveUsers2=saveUsers;
-function saveUsers(u){ _origSaveUsers2(u); syncUsersToGithub(u); }
+// [github hook2 supprimé]
 
 // ══ Admin override ══
-const _origRefreshAdmin2=refreshAdminTable;
-function refreshAdminTable(){ _origRefreshAdmin2(); renderAdminNotifs(); }
+
+
 
 // ══ Anti-devtools ══
 (function(){
@@ -2091,7 +1925,7 @@ async function syncUsersToGithub(users){
   catch(e){if(el)el.className='gh-dot err';if(txt)txt.textContent='Erreur: '+e.message;}
 }
 const _origSU=saveUsers;
-function saveUsers(u){_origSU(u);syncUsersToGithub(u);}
+// [github hook3 supprimé]
 
 // ══ Admin override ══
 const _origRA=refreshAdminTable;
@@ -2247,11 +2081,7 @@ async function loadUsersFromJsonBin() {
 }
 
 // Hook saveUsers → sync automatique
-const _jbOrigSaveUsers = saveUsers;
-function saveUsers(u) {
-  _jbOrigSaveUsers(u);
-  syncUsersToJsonBin(u);
-}
+// [jsonbin hook supprimé]
 
 // Init au chargement
 (async function() {
