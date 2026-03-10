@@ -1357,21 +1357,12 @@ async function doSearch(mode) {
     const prenom  = document.getElementById('s-prenom')?.value.trim().toLowerCase();
     const domaine = document.getElementById('s-domaine')?.value.trim();
 
-    if(email)        query = email;
-    else if(username) query = username;
-    else if(ip)       query = ip;
-    else if(domaine)  query = domaine;
-    else if(tel)      query = tel;
-    else if(nom && prenom) {
-      // Génère des patterns email courants : prenom.nom@gmail.com etc.
-      query = prenom + '.' + nom;
-      extraQueries = [
-        prenom + nom,
-        nom + '.' + prenom,
-        prenom + '_' + nom,
-        nom + prenom,
-      ];
-    }
+    if(email)         query = email;
+    else if(tel)       query = tel;
+    else if(username)  query = username;
+    else if(ip)        query = ip;
+    else if(domaine)   query = domaine;
+    else if(nom && prenom) query = prenom + ' ' + nom;
     else if(nom || prenom) query = nom || prenom;
   } else if(mode === 'stealer'){
     query = (document.getElementById('s-stealer-q')?.value || '').trim();
@@ -1416,20 +1407,36 @@ function renderResults(data, mode, query, lst) {
     document.getElementById('results-count').textContent = results.length + ' résultat' + (results.length>1?'s':'');
     if(!results.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucune fuite trouvée pour "${query}"</div></div>`; return; }
     cards = results.map((p,i) => {
-      const ini = (p.email||p.username||query)[0].toUpperCase();
-      return `<div class="result-card">
+      const ini = (p.email||p.username||p.first_name||query)[0]?.toUpperCase()||'?';
+      const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.email || p.username || query;
+      // Map all known field labels
+      const labels = {
+        email:'📧 Email', password:'🔑 Password', username:'👤 Username',
+        first_name:'👤 Prénom', last_name:'👤 Nom', name:'👤 Nom complet',
+        phone_number:'📞 Téléphone', tel_voip:'📞 Tel VOIP', number:'📞 Numéro',
+        birth_date:'📅 Naissance', user_birth_date:'📅 Date naissance',
+        birth_city:'🏙️ Ville naissance', address_street:'🏠 Adresse',
+        address_city:'🏙️ Ville', address_zip:'📮 Code postal',
+        country:'🌍 Pays', ip:'💻 IP', source:'📂 Source', date:'📅 Date fuite',
+        gender:'⚧ Genre', occupation:'💼 Profession', company:'🏢 Entreprise',
+        national_id:'🪪 ID National', passport:'🪪 Passeport',
+      };
+      // Render all non-null fields
+      const knownFields = Object.keys(labels);
+      const extraFields = Object.keys(p).filter(k => !knownFields.includes(k) && k !== '_id' && p[k] && p[k] !== '***REDACTED***');
+      return \`<div class="result-card">
         <div class="result-card-header">
-          <div class="result-person"><div class="result-avatar">${ini}</div>
-            <div><div class="result-name">${p.email||p.username||query}</div>
-              <div style="display:flex;gap:6px;margin-top:4px">${bdg('🔓 BREACH','#e01c24')}${p.source?bdg('📂 '+p.source,'#22c55e'):''}</div>
+          <div class="result-person"><div class="result-avatar">\${ini}</div>
+            <div><div class="result-name">\${name}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">\${bdg('🔓 BREACH','#e01c24')}\${p.source?bdg('📂 '+p.source,'#22c55e'):''}</div>
             </div>
           </div>
           <span class="result-status status-active">FUITE</span>
         </div>
         <div class="result-grid">
-          ${f('📧 Email',p.email,true)}${f('🔑 Password',p.password&&p.password!=='***REDACTED***'?p.password:null,true)}
-          ${f('👤 Username',p.username,true)}${f('📅 Date',p.date)}${f('📂 Source',p.source)}${f('💻 IP',p.ip,true)}
-        </div></div>`;
+          \${knownFields.filter(k=>p[k]&&(k!=='password'||p[k]!=='***REDACTED***')).map(k=>f(labels[k],String(p[k]),['email','password','username','phone_number','number','ip','national_id'].includes(k))).join('')}
+          \${extraFields.map(k=>f('📌 '+k, String(p[k]))).join('')}
+        </div></div>\`;
     });
   }
 
