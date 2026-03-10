@@ -430,52 +430,59 @@ body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);mi
         <p class="search-subtitle">Explorez notre base de données en combinant plusieurs critères de recherche</p>
       </div>
       <div class="search-limit-warning" id="search-limit-warn"></div>
+      <!-- TABS MODE -->
       <div class="search-tabs">
-        <button class="search-tab active" onclick="switchTab(this,'identite')">👤 Identité</button>
-        <button class="search-tab" onclick="switchTab(this,'documents')">📄 Documents</button>
-        <button class="search-tab" onclick="switchTab(this,'localisation')">📍 Localisation</button>
-        <button class="search-tab" onclick="switchTab(this,'numerique')">🌐 Numérique</button>
+        <button class="search-tab active" onclick="switchTab(this,'breach')">🔓 Breach</button>
+        <button class="search-tab" onclick="switchTab(this,'stealer')">🦠 Stealer Logs</button>
+        <button class="search-tab" onclick="switchTab(this,'osint')">🕵️ OSINT</button>
       </div>
-      <div class="tab-content active" id="tab-identite">
+
+      <!-- BREACH -->
+      <div class="tab-content active" id="tab-breach">
         <div class="search-form">
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">👤 Nom</label><input class="form-input" id="s-nom" placeholder="Ex: Dupont"></div>
-            <div class="form-field"><label class="form-label">👤 Prénom</label><input class="form-input" id="s-prenom" placeholder="Ex: Jean"></div>
+          <div style="font-size:12px;color:var(--text-faint);margin-bottom:14px;font-family:'Rajdhani',sans-serif;line-height:1.6">
+            Recherche dans <strong style="color:var(--red-bright)">50 milliards</strong> de records de fuites de données.<br>
+            Supporte : email, username, IP, domaine
           </div>
-          <div class="form-grid-3">
-            <div class="form-field"><label class="form-label">📅 Jour</label><input class="form-input" id="s-jour" placeholder="Ex: 15"></div>
-            <div class="form-field"><label class="form-label">📅 Mois</label><input class="form-input" id="s-mois" placeholder="Ex: 03"></div>
-            <div class="form-field"><label class="form-label">📅 Année</label><input class="form-input" id="s-annee" placeholder="Ex: 1990"></div>
+          <div class="form-field" style="margin-bottom:16px">
+            <label class="form-label">🔍 Requête</label>
+            <input class="form-input" id="s-breach-q" placeholder="email, username, IP, domaine...">
           </div>
-          <div class="form-field" style="margin-bottom:8px"><label class="form-label">📞 Téléphone</label><input class="form-input" id="s-telephone" placeholder="Ex: 0612345678"></div>
-          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+          <button class="btn-search" onclick="doSearch('breach')">🔍 RECHERCHER LES FUITES</button>
         </div>
       </div>
-      <div class="tab-content" id="tab-documents">
+
+      <!-- STEALER -->
+      <div class="tab-content" id="tab-stealer">
         <div class="search-form">
-          <div class="form-field" style="margin-bottom:16px"><label class="form-label">📧 Email</label><input class="form-input" id="s-email" placeholder="Ex: jean@gmail.com"></div>
-          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
-        </div>
-      </div>
-      <div class="tab-content" id="tab-localisation">
-        <div class="search-form">
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">📍 Ville</label><input class="form-input" id="s-ville" placeholder="Ex: Paris"></div>
-            <div class="form-field"><label class="form-label">📮 Code Postal</label><input class="form-input" id="s-cp" placeholder="Ex: 75001"></div>
+          <div style="font-size:12px;color:var(--text-faint);margin-bottom:14px;font-family:'Rajdhani',sans-serif;line-height:1.6">
+            Recherche dans les logs de <strong style="color:var(--red-bright)">stealers</strong> (malwares voleurs de credentials).<br>
+            Supporte : email, domaine, Discord ID
           </div>
-          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
-        </div>
-      </div>
-      <div class="tab-content" id="tab-numerique">
-        <div class="search-form">
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">👤 Username</label><input class="form-input" id="s-username" placeholder="Ex: jean_d"></div>
-            <div class="form-field"><label class="form-label">💻 Adresse IP</label><input class="form-input" id="s-ip" placeholder="Ex: 192.168.1.1"></div>
+          <div class="form-field" style="margin-bottom:16px">
+            <label class="form-label">🔍 Requête</label>
+            <input class="form-input" id="s-stealer-q" placeholder="email, domaine, Discord ID...">
           </div>
-          <button class="btn-search" onclick="doSearch()">🔍 LANCER LA RECHERCHE</button>
+          <button class="btn-search" onclick="doSearch('stealer')">🦠 RECHERCHER STEALER LOGS</button>
         </div>
       </div>
-      <div class="search-footer-note">🔐 Recherches chiffrées et anonymisées</div>
+
+      <!-- OSINT -->
+      <div class="tab-content" id="tab-osint">
+        <div class="search-form">
+          <div style="font-size:12px;color:var(--text-faint);margin-bottom:14px;font-family:'Rajdhani',sans-serif;line-height:1.6">
+            Lookup instantané de profils : <strong style="color:var(--red-bright)">Discord, Steam, Xbox, Roblox, Email</strong>.<br>
+            Discord/Steam : entre l'ID numérique · Email : entre l'adresse complète
+          </div>
+          <div class="form-field" style="margin-bottom:16px">
+            <label class="form-label">🔍 ID / Email</label>
+            <input class="form-input" id="s-osint-q" placeholder="Discord ID, Steam ID, email...">
+          </div>
+          <button class="btn-search" onclick="doSearch('osint')">🕵️ LANCER L'OSINT</button>
+        </div>
+      </div>
+
+      <div class="search-footer-note">🔐 Propulsé par OathNet — 50B+ records indexés</div>
       <div class="results-section" id="results-section" style="display:none">
         <div class="results-header"><div class="results-title">Résultats</div><div class="results-count" id="results-count">0</div></div>
         <div id="results-list"></div>
@@ -1306,107 +1313,136 @@ function matchRecord(p, filters) {
 // =============================================
 // SEARCH
 // =============================================
-function switchTab(el,id){ document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); el.classList.add('active'); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('results-section').style.display='none'; }
+function switchTab(el,id){ document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); el.classList.add('active'); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('results-section').style.display='none'; document.getElementById('results-list').innerHTML=''; }
 function getVal(id){ const e=document.getElementById(id); return e?e.value.trim().toLowerCase():''; }
 
 
-async function doSearch(){
-  const sess=getSession(); if(!sess) return;
-  const users=getUsers();
-  const account=users[sess.username];
-  const limit=getSearchLimit(account.plan);
-  const today=new Date().toDateString();
-  if(account.lastSearchDay!==today){ account.searches=0; account.lastSearchDay=today; }
+async function doSearch(mode) {
+  const sess = getSession(); if(!sess) return;
+  const users = getUsers();
+  const account = users[sess.username];
+  const limit = getSearchLimit(account.plan);
+  const today = new Date().toDateString();
+  if(account.lastSearchDay !== today){ account.searches = 0; account.lastSearchDay = today; }
 
-  if(account.searches>=limit && limit!==Infinity){
-    const warn=document.getElementById('search-limit-warn');
-    warn.textContent=`⚠️ Limite atteinte (${limit} recherches/jour). Passez au plan supérieur pour continuer.`;
+  if(account.searches >= limit && limit !== Infinity){
+    const warn = document.getElementById('search-limit-warn');
+    warn.textContent = `⚠️ Limite atteinte (${limit} recherches/jour). Passez au plan supérieur.`;
     warn.classList.add('show');
     return;
   }
 
-  // Récupère le critère principal (email ou username en priorité)
-  const email    = getVal('s-email');
-  const username = getVal('s-username');
-  const nom      = getVal('s-nom');
-  const prenom   = getVal('s-prenom');
-  const tel      = getVal('s-telephone');
-  const ip       = getVal('s-ip');
-
-  // L'API recherche par query string — on prend le premier critère disponible
-  const query = email || username || (nom && prenom ? prenom+' '+nom : nom || prenom) || tel || ip || getVal('s-ville');
-
-  if(!query){ alert('Veuillez renseigner au moins un critère.'); return; }
+  const qMap = { breach: 's-breach-q', stealer: 's-stealer-q', osint: 's-osint-q' };
+  const qId = qMap[mode] || 's-breach-q';
+  const query = (document.getElementById(qId)?.value || '').trim();
+  if(!query){ alert('Veuillez entrer une requête.'); return; }
 
   document.getElementById('search-limit-warn').classList.remove('show');
-  const sec=document.getElementById('results-section'), lst=document.getElementById('results-list');
-  sec.style.display='block';
-  lst.innerHTML=`<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Analyse en cours...</div></div>`;
+  const sec = document.getElementById('results-section');
+  const lst = document.getElementById('results-list');
+  sec.style.display = 'block';
+  lst.innerHTML = `<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Analyse en cours...</div></div>`;
 
-  account.searches=(account.searches||0)+1;
-  users[sess.username]=account;
-  saveUsers(users);
-  setSession(account);
-  updateSearchDisplay(account);
+  account.searches = (account.searches || 0) + 1;
+  users[sess.username] = account;
+  saveUsers(users); setSession(account); updateSearchDisplay(account);
 
-  let res = [];
+  const proxyUrl = getProxyUrl();
+  if(!proxyUrl){
+    lst.innerHTML = `<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-text">Proxy non configuré</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Configure le Worker Cloudflare dans le panel admin</div></div>`;
+    return;
+  }
+
   try {
-    const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
+    const r = await fetch(`${proxyUrl}?q=${encodeURIComponent(query)}&action=${mode}`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(25000)
     });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
-    if(!data.success) throw new Error(data.message || 'Erreur API');
-    res = data.data?.results || [];
+    if(!data.success) throw new Error(data.error || 'Erreur API');
+    renderResults(data.data, mode, query, lst);
   } catch(e) {
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur API</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message}</div></div>`;
-    return;
+    lst.innerHTML = `<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message}</div></div>`;
   }
+}
 
-  document.getElementById('results-count').textContent = res.length + ' résultat' + (res.length > 1 ? 's' : '');
+function renderResults(data, mode, query, lst) {
+  const f = (l,v,h=false) => v ? `<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'highlight':''}"><span>${v}</span></div></div>` : '';
+  const bdg = (label, color='#22c55e') => `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:${color}22;border:1px solid ${color}55;color:${color}">${label}</span>`;
+  let cards = [];
 
-  if(!res.length){
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat trouvé</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Essayez avec un email ou un nom d'utilisateur</div></div>`;
-    return;
-  }
-
-  lst.innerHTML = res.map((p, i) => {
-    const emailVal = p.email || query;
-    const ini = emailVal[0].toUpperCase();
-    const f = (l,v,h=false) => `<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'highlight':''}">${v||'—'}</div></div>`;
-    // Badge source
-    const srcBadge = p.source ? `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22c55e;">📂 ${p.source}</span>` : '';
-    // Champs dynamiques
-    const known = ['email','password','source','date','username','name','phone','ip','address'];
-    const extra = Object.keys(p).filter(k => !known.includes(k) && p[k] && p[k] !== '***REDACTED***');
-    return `<div class="result-card">
-      <div class="result-card-header">
-        <div class="result-person">
-          <div class="result-avatar">${ini}</div>
-          <div>
-            <div class="result-name">${p.name || p.email || query}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <div class="result-id">#${String(i+1).padStart(6,'0')}</div>
-              ${srcBadge}
+  if(mode === 'breach'){
+    const results = data.breach?.data?.results || [];
+    document.getElementById('results-count').textContent = results.length + ' résultat' + (results.length>1?'s':'');
+    if(!results.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucune fuite trouvée pour "${query}"</div></div>`; return; }
+    cards = results.map((p,i) => {
+      const ini = (p.email||p.username||query)[0].toUpperCase();
+      return `<div class="result-card">
+        <div class="result-card-header">
+          <div class="result-person"><div class="result-avatar">${ini}</div>
+            <div><div class="result-name">${p.email||p.username||query}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">${bdg('🔓 BREACH','#e01c24')}${p.source?bdg('📂 '+p.source,'#22c55e'):''}</div>
             </div>
+          </div>
+          <span class="result-status status-active">FUITE</span>
+        </div>
+        <div class="result-grid">
+          ${f('📧 Email',p.email,true)}${f('🔑 Password',p.password&&p.password!=='***REDACTED***'?p.password:null,true)}
+          ${f('👤 Username',p.username,true)}${f('📅 Date',p.date)}${f('📂 Source',p.source)}${f('💻 IP',p.ip,true)}
+        </div></div>`;
+    });
+  }
+
+  else if(mode === 'stealer'){
+    const raw = data.stealer?.data || {};
+    const arr = Array.isArray(raw) ? raw : (raw.results||raw.profiles||raw.logs||[]);
+    document.getElementById('results-count').textContent = arr.length + ' log' + (arr.length>1?'s':'');
+    if(!arr.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun stealer log pour "${query}"</div></div>`; return; }
+    cards = arr.map((p,i) => {
+      const ini = (p.email||p.victim||p.machine||query)[0]?.toUpperCase()||'?';
+      const creds = p.credentials||p.passwords||[];
+      return `<div class="result-card">
+        <div class="result-card-header">
+          <div class="result-person"><div class="result-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">${ini}</div>
+            <div><div class="result-name">${p.email||p.victim||p.machine||query}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">${bdg('🦠 STEALER','#f59e0b')}${p.stealer?bdg(p.stealer,'#888'):''}</div>
+            </div>
+          </div>
+          <span class="result-status" style="background:rgba(245,158,11,0.1);color:#f59e0b;border-color:rgba(245,158,11,0.3)">LOG</span>
+        </div>
+        <div class="result-grid">
+          ${f('📧 Email',p.email,true)}${f('💻 Machine',p.machine||p.computer_name)}
+          ${f('🌐 IP',p.ip,true)}${f('📅 Date',p.date||p.log_date)}${f('🦠 Stealer',p.stealer||p.malware)}${f('🌍 Pays',p.country)}
+          ${creds.length?`<div class="result-field" style="grid-column:1/-1"><div class="result-field-label">🔑 Credentials (${creds.length})</div><div class="result-field-value highlight" style="font-size:11px;line-height:2">${creds.slice(0,5).map(c=>`${c.url||''} → ${c.username||''} : ${c.password||''}`).join('<br>')}</div></div>`:''}
+        </div></div>`;
+    });
+  }
+
+  else if(mode === 'osint'){
+    const od = data.osint?.data?.data || data.osint?.data || {};
+    const type = data.osint?.type || 'unknown';
+    const typeColors = {discord:'#7289da',steam:'#00adee',email:'#22c55e'};
+    const color = typeColors[type]||'#888';
+    if(!od||!Object.keys(od).length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Profil introuvable pour "${query}"</div></div>`; return; }
+    document.getElementById('results-count').textContent = '1 profil';
+    const ini = (od.username||od.email||od.global_name||query)[0]?.toUpperCase()||'?';
+    cards = [`<div class="result-card">
+      <div class="result-card-header">
+        <div class="result-person"><div class="result-avatar" style="background:linear-gradient(135deg,${color},#333)">${ini}</div>
+          <div><div class="result-name">${od.username||od.global_name||od.email||query}</div>
+            <div style="display:flex;gap:6px;margin-top:4px">${bdg('🕵️ OSINT',color)}${bdg(type.toUpperCase(),color)}</div>
           </div>
         </div>
         <span class="result-status status-active">TROUVÉ</span>
       </div>
       <div class="result-grid">
-        ${f('📧 Email', p.email, true)}
-        ${f('🔑 Mot de passe', p.password && p.password !== '***REDACTED***' ? p.password : null, true)}
-        ${f('👤 Username', p.username, true)}
-        ${f('📅 Date', p.date)}
-        ${f('📂 Source', p.source)}
-        ${f('📞 Téléphone', p.phone, true)}
-        ${f('💻 IP', p.ip, true)}
-        ${f('🏠 Adresse', p.address)}
-        ${extra.map(k => f('📌 '+k, p[k])).join('')}
-      </div>
-    </div>`;
-  }).join('');
+        ${Object.entries(od).filter(([k,v])=>v&&typeof v!=='object'&&typeof v!=='boolean').map(([k,v])=>f('📌 '+k,String(v),['id','email','username','discriminator','steam_id'].includes(k))).join('')}
+      </div></div>`];
+  }
+
+  if(!cards.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat</div></div>`; return; }
+  lst.innerHTML = cards.join('');
 }
 
 // =============================================
