@@ -440,21 +440,27 @@ body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);mi
       <!-- BREACH -->
       <div class="tab-content active" id="tab-breach">
         <div class="search-form">
+          <!-- Champ principal -->
+          <div class="form-field" style="margin-bottom:6px">
+            <label class="form-label">🔍 Email <span style="color:var(--red-bright);font-weight:700">★ Recommandé</span></label>
+            <input class="form-input" id="s-email" placeholder="Ex: jean.dupont@gmail.com">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin:10px 0 14px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:11px;color:var(--text-faint);font-family:'Rajdhani',sans-serif;letter-spacing:2px">OU</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">👤 Username</label><input class="form-input" id="s-username" placeholder="Ex: jean_dupont"></div>
+            <div class="form-field"><label class="form-label">💻 Adresse IP</label><input class="form-input" id="s-ip" placeholder="Ex: 192.168.1.1"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-field"><label class="form-label">🌍 Domaine</label><input class="form-input" id="s-domaine" placeholder="Ex: gmail.com"></div>
+            <div class="form-field"><label class="form-label">📞 Téléphone</label><input class="form-input" id="s-telephone" placeholder="Ex: 0612345678"></div>
+          </div>
           <div class="form-grid">
             <div class="form-field"><label class="form-label">👤 Nom</label><input class="form-input" id="s-nom" placeholder="Ex: Dupont"></div>
             <div class="form-field"><label class="form-label">👤 Prénom</label><input class="form-input" id="s-prenom" placeholder="Ex: Jean"></div>
           </div>
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">📧 Email</label><input class="form-input" id="s-email" placeholder="Ex: jean@gmail.com"></div>
-            <div class="form-field"><label class="form-label">📞 Téléphone</label><input class="form-input" id="s-telephone" placeholder="Ex: 0612345678"></div>
-          </div>
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">👤 Username</label><input class="form-input" id="s-username" placeholder="Ex: jean_d"></div>
-            <div class="form-field"><label class="form-label">💻 IP</label><input class="form-input" id="s-ip" placeholder="Ex: 192.168.1.1"></div>
-          </div>
-          <div class="form-grid">
-            <div class="form-field"><label class="form-label">🏙️ Ville</label><input class="form-input" id="s-ville" placeholder="Ex: Paris"></div>
-            <div class="form-field"><label class="form-label">🌍 Domaine</label><input class="form-input" id="s-domaine" placeholder="Ex: example.com"></div>
+          <div style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.25);border-radius:8px;padding:10px 14px;font-size:11px;color:#ffa500;font-family:'Rajdhani',sans-serif;margin-bottom:14px;line-height:1.6">
+            ⚡ <strong>Les meilleurs résultats</strong> viennent d'une recherche par email, username, IP ou domaine.<br>
+            Nom/prénom/téléphone sont combinés automatiquement pour trouver des correspondances.
           </div>
           <button class="btn-search" onclick="doSearch('breach')">🔍 RECHERCHER LES FUITES</button>
         </div>
@@ -1341,17 +1347,32 @@ async function doSearch(mode) {
 
   // Build query from fields depending on mode
   let query = '';
+  let extraQueries = []; // For multi-search (nom+prenom → try email patterns)
   if(mode === 'breach'){
-    const email    = document.getElementById('s-email')?.value.trim();
-    const username = document.getElementById('s-username')?.value.trim();
-    const tel      = document.getElementById('s-telephone')?.value.trim();
-    const ip       = document.getElementById('s-ip')?.value.trim();
-    const nom      = document.getElementById('s-nom')?.value.trim();
-    const prenom   = document.getElementById('s-prenom')?.value.trim();
-    const ville    = document.getElementById('s-ville')?.value.trim();
-    const domaine  = document.getElementById('s-domaine')?.value.trim();
-    // Priority: email > username > ip > tel > domaine > nom+prenom > nom > prenom > ville
-    query = email || username || ip || tel || domaine || (nom&&prenom?prenom+' '+nom:nom||prenom) || ville || '';
+    const email   = document.getElementById('s-email')?.value.trim();
+    const username= document.getElementById('s-username')?.value.trim();
+    const tel     = document.getElementById('s-telephone')?.value.trim();
+    const ip      = document.getElementById('s-ip')?.value.trim();
+    const nom     = document.getElementById('s-nom')?.value.trim().toLowerCase();
+    const prenom  = document.getElementById('s-prenom')?.value.trim().toLowerCase();
+    const domaine = document.getElementById('s-domaine')?.value.trim();
+
+    if(email)        query = email;
+    else if(username) query = username;
+    else if(ip)       query = ip;
+    else if(domaine)  query = domaine;
+    else if(tel)      query = tel;
+    else if(nom && prenom) {
+      // Génère des patterns email courants : prenom.nom@gmail.com etc.
+      query = prenom + '.' + nom;
+      extraQueries = [
+        prenom + nom,
+        nom + '.' + prenom,
+        prenom + '_' + nom,
+        nom + prenom,
+      ];
+    }
+    else if(nom || prenom) query = nom || prenom;
   } else if(mode === 'stealer'){
     query = (document.getElementById('s-stealer-q')?.value || '').trim();
   } else if(mode === 'osint'){
