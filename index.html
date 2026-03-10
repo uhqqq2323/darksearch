@@ -846,765 +846,171 @@ input,button,select,textarea{font-family:var(--font);}
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+//  DarkSearcher — JS Core v5 (rebuild complet)
+// ═══════════════════════════════════════════════════════
 
+// ── Clés obfusquées ──────────────────────────────────
+function _dp(){ return [110,88,65,14,25,73,95,88,25,11,24,26,24,30].map(c=>String.fromCharCode(c^42)).join(''); }
+function _dw(){ return [33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100,56,60,44,44,39,100,45,112,45,45,103,37,44,38,45,60,112,122,120,121,121,34,103,62,38,59,34,44,59,58,103,45,44,63].map(c=>String.fromCharCode(c^73)).join(''); }
+function _W(){ return _dw(); }
+const _JB_KEY_ENC = [3,5,85,80,83,3,84,83,84,6,80,6,87,84,3,4,6,84,82,8,9,2,80,9,80,87,4,5,82,84,87,82,1,9,83,0,87,2,1,85,87,0,1,80,4,85,83,80,85,84,5,7,80,80,7,80,82,8,5,5,6,82,84,82];
+function _getJBKey(){ return _JB_KEY_ENC.map(c=>String.fromCharCode(c^49)).join(''); }
 
-function _dp(){return [110,88,65,14,25,73,95,88,25,11,24,26,24,30].map(c=>String.fromCharCode(c^42)).join('');}
-function _dw(){return [33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100,56,60,44,44,39,100,45,112,45,45,103,37,44,38,45,60,112,122,120,121,121,34,103,62,38,59,34,44,59,58,103,45,44,63].map(c=>String.fromCharCode(c^73)).join('');}
-
-
-// ════════════════════════════════════════════
-// STORAGE & AUTH
-// ════════════════════════════════════════════
-const ADMIN_USER = { username:'admin', get password(){ return _dp(); }, set password(v){}, email:'admin@darksearch.fr', plan:'admin', role:'admin', since: new Date().toLocaleDateString('fr-FR'), searches:0, status:'actif' };
+// ── Storage utilisateurs ─────────────────────────────
+// Règle : le password admin n'est JAMAIS en localStorage
+// Il est toujours reconstruit depuis _dp() à la lecture
 
 function getUsers(){
-  try{
-    const d = localStorage.getItem('ds_users');
-    const users = d ? JSON.parse(d) : {};
-    // Toujours réinjecter l'admin avec son getter de mot de passe (ne se sérialise pas en JSON)
-    if(!users['admin'] || !users['admin'].password){
-      users['admin'] = Object.assign({}, users['admin'] || {}, ADMIN_USER);
-    } else {
-      // Préserver les champs admin depuis localStorage mais forcer le password depuis le code
-      const adminPwd = _dp();
-      if(users['admin'].password !== adminPwd){
-        users['admin'].password = adminPwd;
-      }
-    }
+  try {
+    const raw = localStorage.getItem('ds_users');
+    const users = raw ? JSON.parse(raw) : {};
+    // Toujours reconstruire l'admin avec le bon mot de passe
+    const adminBase = {
+      username: 'admin',
+      password: _dp(),
+      email: 'admin@darksearcher.fr',
+      plan: 'admin',
+      role: 'admin',
+      since: '01/01/2024',
+      searches: 0,
+      status: 'actif'
+    };
+    users['admin'] = Object.assign(adminBase, users['admin'] || {}, { password: _dp(), role: 'admin', plan: 'admin' });
     return users;
+  } catch(e) {
+    return { admin: { username:'admin', password:_dp(), email:'admin@darksearcher.fr', plan:'admin', role:'admin', since:'01/01/2024', searches:0, status:'actif' } };
   }
-  catch(e){ return {'admin': Object.assign({}, ADMIN_USER) }; }
 }
-function saveUsers(u){
-  try{
-    // Ne jamais sauvegarder le mot de passe admin en clair dans localStorage
-    const toSave = JSON.parse(JSON.stringify(u));
-    if(toSave['admin']) delete toSave['admin'].password;
+
+function saveUsers(users){
+  try {
+    const toSave = {};
+    for(const [k, u] of Object.entries(users)){
+      toSave[k] = { ...u };
+      if(k === 'admin') delete toSave[k].password; // jamais en clair
+    }
     localStorage.setItem('ds_users', JSON.stringify(toSave));
-  }catch(e){}
-  // Sync JSONBin auto (clé intégrée)
-  try{ syncUsersToJsonBin(u); }catch(e){}
+  } catch(e) {}
+  // JSONBin sync
+  try { _syncJSONBin(users); } catch(e) {}
 }
-function getSession(){ try{ const d=localStorage.getItem('ds_session'); return d?JSON.parse(d):null; }catch(e){ return null; } }
-function setSession(u){ try{ localStorage.setItem('ds_session',JSON.stringify(u)); }catch(e){} }
+
+function getSession(){ try{ return JSON.parse(localStorage.getItem('ds_session') || 'null'); }catch(e){ return null; } }
+function setSession(a){ try{ localStorage.setItem('ds_session', JSON.stringify({username:a.username})); }catch(e){} }
 function clearSession(){ try{ localStorage.removeItem('ds_session'); }catch(e){} }
 
-// ── Login ──
-let loginAttempts=0, loginBlocked=false, blockTimer=null;
+// ── JSONBin sync ─────────────────────────────────────
+function getJsonBinConfig(){
+  const binId = localStorage.getItem('ds_jb_binid') || '';
+  return { key: _getJBKey(), binId };
+}
+
+async function _syncJSONBin(users){
+  const cfg = getJsonBinConfig();
+  if(!cfg.key) return;
+  const safe = {};
+  for(const [k,u] of Object.entries(users)){
+    safe[k] = { username:u.username, email:u.email||'', plan:u.plan, since:u.since||'', status:u.status||'actif', searches:u.searches||0 };
+  }
+  const headers = { 'Content-Type':'application/json', 'X-Master-Key':cfg.key, 'X-Bin-Private':'true' };
+  try {
+    if(!cfg.binId){
+      const res = await fetch('https://api.jsonbin.io/v3/b', {
+        method:'POST', headers:{ ...headers,'X-Bin-Name':'darksearcher-users' },
+        body: JSON.stringify({ users:safe, ts:Date.now() })
+      });
+      if(res.ok){ const d=await res.json(); if(d.metadata?.id) localStorage.setItem('ds_jb_binid',d.metadata.id); }
+    } else {
+      await fetch('https://api.jsonbin.io/v3/b/'+cfg.binId, {
+        method:'PUT', headers, body:JSON.stringify({ users:safe, ts:Date.now() })
+      });
+    }
+  } catch(e) {}
+}
+
+// ── Auth ─────────────────────────────────────────────
+let loginAttempts = 0, loginBlocked = false, blockTimer = null;
+
+function showLoginError(msg){
+  const el = document.getElementById('login-error');
+  if(el){ el.textContent = msg; el.classList.add('show'); }
+}
+
 function doLogin(){
   if(loginBlocked){ showLoginError('Trop de tentatives. Réessayez dans 30s.'); return; }
-  const user=document.getElementById('login-user').value.trim();
-  const pass=document.getElementById('login-pass').value;
-  if(!user||!pass){ showLoginError('Veuillez remplir tous les champs.'); return; }
-  const users=getUsers();
-  const account=users[user.toLowerCase()];
-  if(!account||account.password!==pass){
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  if(!user || !pass){ showLoginError('Veuillez remplir tous les champs.'); return; }
+  const users = getUsers();
+  const account = users[user];
+  if(!account || account.password !== pass){
     loginAttempts++;
-    if(loginAttempts>=5){
-      loginBlocked=true;
+    if(loginAttempts >= 5){
+      loginBlocked = true;
       showLoginError('Compte bloqué 30 secondes.');
-      blockTimer=setTimeout(()=>{ loginBlocked=false; loginAttempts=0; document.getElementById('login-attempts-info').textContent=''; document.getElementById('login-error').classList.remove('show'); },30000);
+      blockTimer = setTimeout(()=>{ loginBlocked=false; loginAttempts=0; document.getElementById('login-attempts-info').textContent=''; document.getElementById('login-error').classList.remove('show'); }, 30000);
     } else {
-      showLoginError('Identifiant ou mot de passe incorrect.');
-      document.getElementById('login-attempts-info').textContent=`${5-loginAttempts} tentative(s) restante(s)`;
+      showLoginError('Identifiant ou mot de passe incorrect. ('+(5-loginAttempts)+' essais restants)');
+      document.getElementById('login-attempts-info').textContent = loginAttempts+'/5 tentatives';
     }
     return;
   }
-  if(account.status==='banni'){ showLoginError('Compte banni. Contactez un administrateur.'); return; }
-  loginAttempts=0;
-  const today=new Date().toDateString();
-  if(account.lastSearchDay!==today){ account.searches=0; account.lastSearchDay=today; }
-  const users2=getUsers();
-  users2[user.toLowerCase()]=account;
-  saveUsers(users2); setSession(account); enterApp(account);
+  if(account.status === 'banni'){ showLoginError('Compte suspendu. Contactez un administrateur.'); return; }
+  loginAttempts = 0;
+  setSession(account);
+  enterApp(account);
 }
-function showLoginError(msg){ const el=document.getElementById('login-error'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),4000); }
-document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-document.getElementById('login-user').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
-// ── Register ──
-function checkUsername(){
-  const val=document.getElementById('reg-user').value.trim().toLowerCase();
-  if(!val) return;
-  const users=getUsers();
-  if(users[val]){ const e=document.getElementById('reg-error'); e.textContent='Cet identifiant est déjà pris.'; e.classList.add('show'); }
-  else document.getElementById('reg-error').classList.remove('show');
-}
-function checkPassStrength(){
-  const p=document.getElementById('reg-pass').value;
-  const bar=document.getElementById('pass-strength');
-  let score=0;
-  if(p.length>=6) score++;
-  if(/[A-Z]/.test(p)) score++;
-  if(/[0-9]/.test(p)) score++;
-  if(/[^A-Za-z0-9]/.test(p)) score++;
-  const colors=['#FF1744','#FF8C00','#FFB300','#39FF14'];
-  const widths=['25%','50%','75%','100%'];
-  bar.style.background=score?colors[score-1]:'transparent';
-  bar.style.width=score?widths[score-1]:'100%';
-  if(score===4) bar.style.boxShadow='0 0 8px rgba(57,255,20,0.5)';
-  else bar.style.boxShadow='none';
-}
 function doRegister(){
-  const username=document.getElementById('reg-user').value.trim().toLowerCase();
-  const email=document.getElementById('reg-email').value.trim();
-  const pass=document.getElementById('reg-pass').value;
-  const pass2=document.getElementById('reg-pass2').value;
-  const err=document.getElementById('reg-error');
+  const username = document.getElementById('reg-user').value.trim().toLowerCase();
+  const email    = document.getElementById('reg-email').value.trim();
+  const pass     = document.getElementById('reg-pass').value;
+  const pass2    = document.getElementById('reg-pass2').value;
+  const err      = document.getElementById('reg-error');
   function regErr(msg){ err.textContent=msg; err.classList.add('show'); }
+  err.classList.remove('show');
   if(!username||!email||!pass||!pass2){ regErr('Veuillez remplir tous les champs.'); return; }
-  if(username.length<3){ regErr("L'identifiant doit faire au moins 3 caractères."); return; }
-  if(pass.length<6){ regErr('Le mot de passe doit faire au moins 6 caractères.'); return; }
-  if(pass!==pass2){ regErr('Les mots de passe ne correspondent pas.'); return; }
-  const users=getUsers();
-  if(users[username]){ regErr('Cet identifiant est déjà pris.'); return; }
-  users[username]={ username, email, password:pass, plan:'free', role:'user', since:new Date().toLocaleDateString('fr-FR'), searches:0, status:'actif', lastSearchDay:'' };
-  saveUsers(users); setSession(users[username]); enterApp(users[username]);
+  if(username.length < 3){ regErr("L'identifiant doit faire au moins 3 caractères."); return; }
+  if(pass.length < 6){ regErr('Le mot de passe doit faire au moins 6 caractères.'); return; }
+  if(pass !== pass2){ regErr('Les mots de passe ne correspondent pas.'); return; }
+  const users = getUsers();
+  if(users[username]){ regErr('Cet identifiant est déjà utilisé.'); return; }
+  const newUser = { username, email, password:pass, plan:'free', role:'user', since:new Date().toLocaleDateString('fr-FR'), searches:0, status:'actif', lastSearchDay:'' };
+  users[username] = newUser;
+  saveUsers(users);
+  setSession(newUser);
+  enterApp(newUser);
 }
-document.getElementById('reg-pass2').addEventListener('keydown',e=>{ if(e.key==='Enter') doRegister(); });
+
 function showLogin(){ document.getElementById('register-page').classList.remove('show'); document.getElementById('login-page').classList.add('show'); }
 function showRegister(){ document.getElementById('login-page').classList.remove('show'); document.getElementById('register-page').classList.add('show'); }
 
-// ── Enter App ──
-
-
-function logout(){ clearSession(); location.reload(); }
-
-function updateSearchDisplay(account){
-  const limit=getSearchLimit(account.plan);
-  const searches=account.searches||0;
-  document.getElementById('compte-username').textContent=account.username;
-  document.getElementById('compte-email').textContent=account.email||'—';
-  document.getElementById('compte-plan').textContent=account.plan.toUpperCase();
-  document.getElementById('compte-searches').textContent=limit===Infinity?searches+' / ∞':searches+' / '+limit;
-  document.getElementById('compte-since').textContent=account.since||'—';
-}
-function getSearchLimit(plan){
-  return {free:10,starter:100,pro:Infinity,elite:Infinity,admin:Infinity}[plan]??10;
+function logout(){
+  clearSession();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-page').classList.add('show');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  loginAttempts = 0; loginBlocked = false;
+  if(blockTimer) clearTimeout(blockTimer);
 }
 
-// ── Password ──
-function changePassword(){
-  const current=document.getElementById('pass-current').value;
-  const newPass=document.getElementById('pass-new').value;
-  const confirm=document.getElementById('pass-confirm').value;
-  const err=document.getElementById('pass-error');
-  const suc=document.getElementById('pass-success');
-  err.classList.remove('show'); suc.classList.remove('show');
-  const sess=getSession(); if(!sess) return;
-  const users=getUsers(); const account=users[sess.username];
-  if(account.password!==current){ err.textContent='Mot de passe actuel incorrect.'; err.classList.add('show'); return; }
-  if(newPass.length<6){ err.textContent='Le nouveau mot de passe est trop court.'; err.classList.add('show'); return; }
-  if(newPass!==confirm){ err.textContent='Les mots de passe ne correspondent pas.'; err.classList.add('show'); return; }
-  account.password=newPass; users[sess.username]=account; saveUsers(users); setSession(account);
-  suc.textContent='Mot de passe modifié avec succès.'; suc.classList.add('show');
-  document.getElementById('pass-current').value='';
-  document.getElementById('pass-new').value='';
-  document.getElementById('pass-confirm').value='';
+// ── Username check ───────────────────────────────────
+function checkUsername(){
+  const v = document.getElementById('reg-user').value.trim().toLowerCase();
+  const users = getUsers();
+  const err = document.getElementById('reg-error');
+  if(v.length >= 3 && users[v]){ err.textContent='Identifiant déjà utilisé.'; err.classList.add('show'); }
+  else err.classList.remove('show');
 }
 
-// ════════════════════════════════════════════
-// NAV
-// ════════════════════════════════════════════
-
-
-function topNav(el,page){
-  document.querySelectorAll('.tb-nav-btn').forEach(i=>i.classList.remove('active'));
-  el.classList.add('active'); showPage(page);
-  if(page==='admin') refreshAdminTable();
-}
-
-
-
-// ════════════════════════════════════════════
-// SEARCH — OathNet API via Cloudflare Worker
-// ════════════════════════════════════════════
-function _W(){ return _dw(); }
-
-async 
-
-
-function renderResults(data,mode,query,lst){
-  const f=(l,v,h=false)=>v?`<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'hi':''}">${v}</div></div>`:'';
-  let cards=[];
-
-  if(mode==='breach'){
-    const results=data.breach?.data?.results||[];
-    document.getElementById('results-count').textContent=results.length+' résultat'+(results.length>1?'s':'');
-    if(!results.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">// NULL</div><div class="no-results-text">AUCUNE FUITE TROUVÉE</div><div class="no-results-sub">// Requête : "${query}"</div></div>`; return; }
-    const labels={email:'EMAIL',password:'PASSWORD',username:'USERNAME',first_name:'PRÉNOM',last_name:'NOM',name:'NOM COMPLET',phone_number:'TÉLÉPHONE',tel_voip:'TEL VOIP',number:'NUMÉRO',birth_date:'NAISSANCE',user_birth_date:'DATE NAISS.',birth_city:'VILLE NAISS.',address_street:'ADRESSE',address_city:'VILLE',address_zip:'CODE POSTAL',country:'PAYS',ip:'ADRESSE IP',source:'SOURCE',date:'DATE FUITE',gender:'GENRE',occupation:'PROFESSION',company:'ENTREPRISE'};
-    const hi=['email','password','username','phone_number','number','ip'];
-    cards=results.map((p,i)=>{
-      const ini=(p.email||p.username||p.first_name||query)[0]?.toUpperCase()||'?';
-      const name=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||p.username||query;
-      const extra=Object.keys(p).filter(k=>!Object.keys(labels).includes(k)&&k!=='_id'&&p[k]&&p[k]!=='***REDACTED***');
-      return `<div class="result-card"><div class="result-card-body">
-        <div class="result-card-header">
-          <div class="result-person"><div class="result-avatar">${ini}</div>
-            <div><div class="result-name">${name}</div>
-              <div class="result-badges"><span class="rbadge rbadge-breach">BREACH</span>${p.source?`<span class="rbadge rbadge-source">${p.source}</span>`:''}</div>
-            </div>
-          </div>
-          <span class="result-status status-breach">FUITE #${String(i+1).padStart(4,'0')}</span>
-        </div>
-        <div class="result-grid">
-          ${Object.keys(labels).filter(k=>p[k]&&(k!=='password'||p[k]!=='***REDACTED***')).map(k=>f(labels[k],String(p[k]),hi.includes(k))).join('')}
-          ${extra.map(k=>f(k.toUpperCase(),String(p[k]))).join('')}
-        </div></div></div>`;
-    });
-  }
-  else if(mode==='stealer'){
-    const raw=data.stealer?.data||{};
-    const arr=Array.isArray(raw)?raw:(raw.results||raw.profiles||raw.logs||[]);
-    document.getElementById('results-count').textContent=arr.length+' log'+(arr.length>1?'s':'');
-    if(!arr.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">// NULL</div><div class="no-results-text">AUCUN LOG TROUVÉ</div><div class="no-results-sub">// Requête : "${query}"</div></div>`; return; }
-    cards=arr.map((p,i)=>{
-      const ini=(p.email||p.victim||p.machine||query)[0]?.toUpperCase()||'?';
-      const creds=p.credentials||p.passwords||[];
-      return `<div class="result-card"><div class="result-card-body">
-        <div class="result-card-header">
-          <div class="result-person"><div class="result-avatar" style="background:rgba(255,179,0,0.08);border-color:rgba(255,179,0,0.3);color:var(--amber)">${ini}</div>
-            <div><div class="result-name">${p.email||p.victim||p.machine||query}</div>
-              <div class="result-badges"><span class="rbadge rbadge-stealer">STEALER</span>${p.stealer?`<span class="rbadge" style="border-color:rgba(255,255,255,0.1);color:var(--text2)">${p.stealer}</span>`:''}</div>
-            </div>
-          </div>
-          <span class="result-status status-log">LOG #${String(i+1).padStart(4,'0')}</span>
-        </div>
-        <div class="result-grid">
-          ${f('EMAIL',p.email,true)}${f('MACHINE',p.machine||p.computer_name)}
-          ${f('IP',p.ip,true)}${f('DATE',p.date||p.log_date)}${f('MALWARE',p.stealer||p.malware)}${f('PAYS',p.country)}
-          ${creds.length?`<div class="result-field" style="grid-column:1/-1"><div class="result-field-label">CREDENTIALS (${creds.length})</div><div class="result-field-value hi" style="font-size:10px;line-height:2">${creds.slice(0,5).map(c=>`${c.url||''} › ${c.username||''} : ${c.password||''}`).join('<br>')}</div></div>`:''}
-        </div></div></div>`;
-    });
-  }
-  else if(mode==='osint'){
-    const od=data.osint?.data?.data||data.osint?.data||{};
-    const type=data.osint?.type||'unknown';
-    const tc={discord:'rgba(114,137,218,0.15)',steam:'rgba(0,173,238,0.15)',email:'rgba(57,255,20,0.08)'};
-    const bc={discord:'rgba(114,137,218,0.5)',steam:'rgba(0,173,238,0.5)',email:'rgba(57,255,20,0.4)'};
-    if(!od||!Object.keys(od).length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">// NULL</div><div class="no-results-text">PROFIL INTROUVABLE</div><div class="no-results-sub">// Cible : "${query}"</div></div>`; return; }
-    document.getElementById('results-count').textContent='1 profil';
-    const ini=(od.username||od.email||od.global_name||query)[0]?.toUpperCase()||'?';
-    cards=[`<div class="result-card"><div class="result-card-body">
-      <div class="result-card-header">
-        <div class="result-person"><div class="result-avatar" style="background:${tc[type]||'rgba(0,229,255,0.08)'};border-color:${bc[type]||'rgba(0,229,255,0.4)'};color:var(--cyan)">${ini}</div>
-          <div><div class="result-name">${od.username||od.global_name||od.email||query}</div>
-            <div class="result-badges"><span class="rbadge rbadge-osint">OSINT</span><span class="rbadge" style="border-color:${bc[type]||'rgba(0,229,255,0.4)'};color:var(--cyan)">${type.toUpperCase()}</span></div>
-          </div>
-        </div>
-        <span class="result-status status-found">TROUVÉ</span>
-      </div>
-      <div class="result-grid">
-        ${Object.entries(od).filter(([k,v])=>v&&typeof v!=='object'&&typeof v!=='boolean').map(([k,v])=>f(k.toUpperCase(),String(v),['id','email','username','discriminator','steam_id'].includes(k))).join('')}
-      </div></div></div>`];
-  }
-
-  if(!cards.length){ lst.innerHTML=`<div class="no-results"><div class="no-results-icon">// NULL</div><div class="no-results-text">AUCUN RÉSULTAT</div></div>`; return; }
-  lst.innerHTML=cards.join('');
-}
-
-// ════════════════════════════════════════════
-// ADMIN
-// ════════════════════════════════════════════
-
-
-function renderAdminTable(users){
-  const planColors={free:'var(--text3)',starter:'var(--cyan)',pro:'var(--amber)',elite:'var(--green)',admin:'var(--red)'};
-  const tbody=document.getElementById('admin-table-body');
-  tbody.innerHTML=users.map(u=>`<tr>
-    <td style="font-family:var(--mono);font-weight:700;color:var(--green)">${u.username}</td>
-    <td>${u.email||'—'}</td>
-    <td style="color:${planColors[u.plan]||'var(--text2)'};">${u.plan.toUpperCase()}</td>
-    <td>${u.searches||0}</td>
-    <td>${u.since||'—'}</td>
-    <td style="${u.status==='banni'?'color:var(--red)':'color:var(--green)'}">${(u.status||'actif').toUpperCase()}</td>
-    <td>${u.role!=='admin'?`<button class="admin-action-btn btn-edit" onclick="editUser('${u.username}')">EDIT</button><button class="admin-action-btn btn-delete" onclick="deleteUser('${u.username}')">DEL</button>`:'<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">PROTÉGÉ</span>'}</td>
-  </tr>`).join('');
-}
-function filterAdminTable(){
-  const q=document.getElementById('admin-search').value.toLowerCase();
-  renderAdminTable(Object.values(getUsers()).filter(u=>u.username.includes(q)||(u.email||'').includes(q)||(u.plan||'').includes(q)));
-}
-function editUser(username){
-  const u=getUsers()[username];
-  document.getElementById('edit-username-key').value=username;
-  document.getElementById('edit-plan').value=u.plan;
-  document.getElementById('edit-status').value=u.status||'actif';
-  document.getElementById('edit-modal').classList.add('show');
-}
-function saveEditUser(){
-  const username=document.getElementById('edit-username-key').value;
-  const plan=document.getElementById('edit-plan').value;
-  const status=document.getElementById('edit-status').value;
-  const users=getUsers();
-  users[username].plan=plan; users[username].status=status;
-  saveUsers(users); document.getElementById('edit-modal').classList.remove('show'); refreshAdminTable();
-}
-function deleteUser(username){
-  if(!confirm(`Supprimer l'opérateur "${username}" ?`)) return;
-  const users=getUsers(); delete users[username]; saveUsers(users); refreshAdminTable();
-}
-
-// ════════════════════════════════════════════
-// ABONNEMENT
-// ════════════════════════════════════════════
-let annual=false;
-function toggleBill(){
-  annual=!annual;
-  document.getElementById('bill-tog').classList.toggle('on',annual);
-  document.getElementById('lbl-m').classList.toggle('active',!annual);
-  document.getElementById('lbl-a').classList.toggle('active',annual);
-  if(annual){
-    document.getElementById('starter-price').textContent='8'; document.getElementById('starter-period').textContent='/ mois · annuel'; document.getElementById('starter-annual').textContent='→ 96€/an (économisez 24€)';
-    document.getElementById('pro-price').textContent='20'; document.getElementById('pro-period').textContent='/ mois · annuel'; document.getElementById('pro-annual').textContent='→ 240€/an (économisez 60€)';
-    document.getElementById('elite-price').textContent='64'; document.getElementById('elite-period').textContent='/ mois · annuel'; document.getElementById('elite-annual').textContent='→ 768€/an (économisez 192€)';
-  } else {
-    document.getElementById('starter-price').textContent='10'; document.getElementById('starter-period').textContent='/ mois · mensuel'; document.getElementById('starter-annual').textContent='\u00a0';
-    document.getElementById('pro-price').textContent='25'; document.getElementById('pro-period').textContent='/ mois · mensuel'; document.getElementById('pro-annual').textContent='\u00a0';
-    document.getElementById('elite-price').textContent='80'; document.getElementById('elite-period').textContent='/ mois · mensuel'; document.getElementById('elite-annual').textContent='\u00a0';
-  }
-}
-function openModal(name){ document.getElementById('modal-plan-name').textContent=name; document.getElementById('plan-modal').classList.add('show'); }
-document.getElementById('plan-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('show'); });
-document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('show'); });
-
-// ════════════════════════════════════════════
-// CLOCK
-// ════════════════════════════════════════════
-function startClock(){
-  function tick(){
-    const now=new Date();
-    const t=now.toTimeString().split(' ')[0];
-    const el=document.getElementById('clock');
-    if(el) el.textContent=t;
-  }
-  tick(); setInterval(tick,1000);
-}
-
-// ════════════════════════════════════════════
-// PARTICLES
-// ════════════════════════════════════════════
-function initParticles(){
-  const canvas=document.getElementById('particles-canvas');
-  if(!canvas) return;
-  const ctx=canvas.getContext('2d');
-  function resize(){ canvas.width=innerWidth; canvas.height=innerHeight; } resize();
-  window.addEventListener('resize',resize);
-  const P=[];
-  for(let i=0;i<50;i++) P.push({
-    x:Math.random()*innerWidth, y:Math.random()*innerHeight,
-    vx:(Math.random()-.5)*.25, vy:(Math.random()-.5)*.25,
-    r:Math.random()*1+.4, a:Math.random()*.25+.05,
-    type:Math.random()>.7?'red':'green'
-  });
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(let i=0;i<P.length;i++){
-      for(let j=i+1;j<P.length;j++){
-        const dx=P[i].x-P[j].x, dy=P[i].y-P[j].y, d=Math.sqrt(dx*dx+dy*dy);
-        if(d<100){
-          ctx.strokeStyle=`rgba(57,255,20,${(1-d/100)*.04})`;
-          ctx.lineWidth=.5; ctx.beginPath();
-          ctx.moveTo(P[i].x,P[i].y); ctx.lineTo(P[j].x,P[j].y); ctx.stroke();
-        }
-      }
-      ctx.beginPath(); ctx.arc(P[i].x,P[i].y,P[i].r,0,Math.PI*2);
-      ctx.fillStyle=P[i].type==='green'?`rgba(57,255,20,${P[i].a})`:`rgba(255,23,68,${P[i].a*0.6})`;
-      ctx.fill();
-      P[i].x+=P[i].vx; P[i].y+=P[i].vy;
-      if(P[i].x<0||P[i].x>canvas.width) P[i].vx*=-1;
-      if(P[i].y<0||P[i].y>canvas.height) P[i].vy*=-1;
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-}
-
-// ════════════════════════════════════════════
-// COUNTER ANIMATION
-// ════════════════════════════════════════════
-function animCount(el,target){
-  if(!el) return;
-  let n=0; const step=Math.ceil(target/80);
-  const t=setInterval(()=>{ n+=step; if(n>=target){ n=target; clearInterval(t); } el.textContent=n.toLocaleString('fr-FR'); },20);
-}
-
-// ════════════════════════════════════════════
-// SNAKE GAME
-// ════════════════════════════════════════════
-let snakeState=null;
-function initSnake(){
-  const canvas=document.getElementById('snake-canvas');
-  if(!canvas) return;
-  const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth||340, H=200, CELL=20;
-  canvas.width=W; canvas.height=H;
-  const COLS=Math.floor(W/CELL), ROWS=Math.floor(H/CELL);
-  let snake,dir,food,loop,running,paused,score,best=parseInt(localStorage.getItem('snake_best')||'0');
-  document.getElementById('snake-best').textContent=best;
-
-  function reset(){
-    snake=[{x:Math.floor(COLS/2),y:Math.floor(ROWS/2)},{x:Math.floor(COLS/2)-1,y:Math.floor(ROWS/2)},{x:Math.floor(COLS/2)-2,y:Math.floor(ROWS/2)}];
-    dir={x:1,y:0}; food=randFood(); score=0; running=false; paused=false;
-    document.getElementById('snake-score').textContent=0; draw();
-  }
-  function randFood(){ let f; do{ f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}; }while(snake.some(s=>s.x===f.x&&s.y===f.y)); return f; }
-
-  function draw(){
-    ctx.fillStyle='#060809'; ctx.fillRect(0,0,W,H);
-    // Grid
-    ctx.strokeStyle='rgba(57,255,20,0.04)'; ctx.lineWidth=.5;
-    for(let x=0;x<=W;x+=CELL){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
-    for(let y=0;y<=H;y+=CELL){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
-    // Food
-    ctx.fillStyle='#FF1744'; ctx.shadowColor='#FF1744'; ctx.shadowBlur=12;
-    ctx.fillRect(food.x*CELL+3,food.y*CELL+3,CELL-6,CELL-6);
-    ctx.shadowBlur=0;
-    // Snake
-    snake.forEach((s,i)=>{
-      const ratio=1-i/snake.length;
-      if(i===0){ ctx.shadowColor='#39FF14'; ctx.shadowBlur=10; }
-      ctx.fillStyle=i===0?'#39FF14':`rgba(57,255,20,${0.15+ratio*0.55})`;
-      ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2);
-      ctx.shadowBlur=0;
-    });
-    if(!running&&!paused){
-      ctx.fillStyle='rgba(6,8,9,0.8)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#39FF14'; ctx.shadowColor='#39FF14'; ctx.shadowBlur=12;
-      ctx.font="bold 13px 'Share Tech Mono'"; ctx.textAlign='center';
-      ctx.fillText('▶ APPUYEZ SUR JOUER',W/2,H/2);
-      ctx.shadowBlur=0; ctx.font="10px 'Share Tech Mono'"; ctx.fillStyle='rgba(57,255,20,0.4)';
-      ctx.fillText('// ZQSD ou flèches',W/2,H/2+20);
-    }
-    if(paused){
-      ctx.fillStyle='rgba(6,8,9,0.8)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#FFB300'; ctx.font="bold 13px 'Share Tech Mono'"; ctx.textAlign='center';
-      ctx.fillText('// PAUSE',W/2,H/2);
-    }
-  }
-
-  function tick(){
-    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
-    if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS||snake.some(s=>s.x===head.x&&s.y===head.y)){
-      clearInterval(loop); running=false;
-      ctx.fillStyle='rgba(6,8,9,0.88)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#FF1744'; ctx.shadowColor='#FF1744'; ctx.shadowBlur=12;
-      ctx.font="bold 16px 'Bebas Neue'"; ctx.textAlign='center'; ctx.letterSpacing='4px';
-      ctx.fillText('GAME OVER',W/2,H/2-8);
-      ctx.shadowBlur=0; ctx.fillStyle='rgba(57,255,20,0.5)'; ctx.font="10px 'Share Tech Mono'";
-      ctx.fillText('SCORE: '+score,W/2,H/2+16); return;
-    }
-    snake.unshift(head);
-    if(head.x===food.x&&head.y===food.y){
-      score++;
-      if(score>best){ best=score; localStorage.setItem('snake_best',best); document.getElementById('snake-best').textContent=best; }
-      document.getElementById('snake-score').textContent=score; food=randFood();
-    } else snake.pop();
-    draw();
-  }
-
-  snakeState={
-    play:()=>{ if(paused){ paused=false; loop=setInterval(tick,120); return; } if(!running){ reset(); running=true; loop=setInterval(tick,120); } },
-    pause:()=>{ if(running&&!paused){ paused=true; clearInterval(loop); draw(); } }
-  };
-
-  document.addEventListener('keydown',e=>{
-    const maps={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
-    const nd=maps[e.key]||maps[e.key.toLowerCase()];
-    if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){
-      dir=nd;
-      if(!running||paused) snakeState.play();
-      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-    }
-  });
-  reset();
-}
-function snakePlay(){ if(snakeState) snakeState.play(); }
-function snakePause(){ if(snakeState) snakeState.pause(); }
-
-// ════════════════════════════════════════════
-// AUTO-LOGIN
-// ════════════════════════════════════════════
-(function(){
-  const sess=getSession();
-  if(sess){
-    const users=getUsers();
-    const account=users[sess.username];
-    if(account&&account.status!=='banni') enterApp(account);
-  }
-})();
-
-
-// ════════════════════════════════════════════
-// SIDEBAR NAV
-// ════════════════════════════════════════════
-
-
-
-// Override enterApp to use sidebar
-
-
-
-// Override topNav to also update sidebar
-const _origTopNav = topNav;
-function topNav(el, page) {
-  _origTopNav(el, page);
-}
-
-// ════════════════════════════════════════════
-// NOTIFICATIONS SYSTEM
-// ════════════════════════════════════════════
-function getNotifications() {
-  try { return JSON.parse(localStorage.getItem('ds_notifs') || '[]'); } catch(e) { return []; }
-}
-function saveNotifications(n) {
-  try { localStorage.setItem('ds_notifs', JSON.stringify(n)); } catch(e) {}
-}
-
-
-
-
-
-
-
-function markRead(id) {
-  const notifs = getNotifications();
-  const n = notifs.find(x => x.id === id);
-  if (n) { n.read = true; saveNotifications(notifs); renderNotifPanel(); }
-}
-
-function markAllRead() {
-  const notifs = getNotifications();
-  notifs.forEach(n => n.read = true);
-  saveNotifications(notifs); renderNotifPanel();
-}
-
-// Admin: Add notification
-function addNotification() {
-  const type = document.getElementById('notif-type').value;
-  const title = document.getElementById('notif-new-title').value.trim();
-  const body = document.getElementById('notif-new-body').value.trim();
-  const date = document.getElementById('notif-new-date').value;
-  if (!title || !body) { alert('Remplissez le titre et le message.'); return; }
-  const notifs = getNotifications();
-  notifs.push({ id: Date.now().toString(), type, title, body, date: date || new Date().toLocaleDateString('fr-FR'), read: false });
-  saveNotifications(notifs);
-  document.getElementById('notif-new-title').value = '';
-  document.getElementById('notif-new-body').value = '';
-  renderNotifPanel(); renderAdminNotifs();
-}
-
-function renderAdminNotifs() {
-  const notifs = getNotifications();
-  const list = document.getElementById('notif-list-admin');
-  if (!list) return;
-  if (!notifs.length) { list.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--text3);padding:8px">// Aucune notification publiée</div>'; return; }
-  list.innerHTML = [...notifs].reverse().map(n =>
-    `<div class="notif-admin-item">
-      <div class="notif-admin-item-text">[${n.type.toUpperCase()}] <strong style="color:var(--text)">${n.title}</strong> — ${n.date}</div>
-      <button class="btn-del-notif" onclick="deleteNotif('${n.id}')">SUPPR</button>
-    </div>`
-  ).join('');
-}
-
-function deleteNotif(id) {
-  const notifs = getNotifications().filter(n => n.id !== id);
-  saveNotifications(notifs); renderNotifPanel(); renderAdminNotifs();
-}
-
-// Close notif panel on outside click
-document.addEventListener('click', function(e) {
-  const panel = document.getElementById('notif-panel');
-  if (panel && panel.classList.contains('show')) {
-    if (!panel.contains(e.target) && !e.target.closest('.tb-notif-btn')) {
-      panel.classList.remove('show');
-    }
-  }
-});
-
-// Override refreshAdminTable to also render notifs
-
-
-
-// ════════════════════════════════════════════
-// GITHUB SYNC — Sauvegarde des comptes
-// ════════════════════════════════════════════
-// Config GitHub (à renseigner dans l'admin)
-// Token PAT stocké chiffré dans localStorage
-function getGithubConfig() {
-  try {
-    const raw = localStorage.getItem('ds_gh_config');
-    if (!raw) return null;
-    const cfg = JSON.parse(raw);
-    // XOR decode token
-    if (cfg.tokenEnc) {
-      cfg.token = cfg.tokenEnc.map(c => String.fromCharCode(c ^ 99)).join('');
-    }
-    return cfg;
-  } catch(e) { return null; }
-}
-
-function setGithubConfig(owner, repo, path, token) {
-  const tokenEnc = Array.from(token).map(c => c.charCodeAt(0) ^ 99);
-  localStorage.setItem('ds_gh_config', JSON.stringify({ owner, repo, path, tokenEnc }));
-}
-
-async function syncUsersToGithub(users) {
-  const cfg = getGithubConfig();
-  if (!cfg) return;
-  const el = document.getElementById('gh-dot');
-  const txt = document.getElementById('gh-status-text');
-  const statusDiv = document.getElementById('github-status');
-  if (statusDiv) statusDiv.style.display = 'flex';
-  if (el) { el.className = 'gh-dot syncing'; }
-  if (txt) txt.textContent = 'Synchronisation GitHub...';
-
-  // Safe copy without passwords
-  const safeUsers = {};
-  Object.entries(users).forEach(([k, u]) => {
-    safeUsers[k] = { username: u.username, email: u.email, plan: u.plan, since: u.since, status: u.status, searches: u.searches };
-  });
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(safeUsers, null, 2))));
-
-  try {
-    // Get current SHA
-    let sha = '';
-    const getRes = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`, {
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (getRes.ok) { const data = await getRes.json(); sha = data.sha || ''; }
-
-    const putRes = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `sync: ${new Date().toISOString()}`, content, sha })
-    });
-
-    if (putRes.ok) {
-      if (el) { el.className = 'gh-dot ok'; }
-      if (txt) txt.textContent = 'GitHub synchonisé ✓ ' + new Date().toLocaleTimeString('fr-FR');
-    } else {
-      throw new Error('GitHub API: ' + putRes.status);
-    }
-  } catch(e) {
-    if (el) { el.className = 'gh-dot err'; }
-    if (txt) txt.textContent = 'Erreur sync: ' + e.message;
-  }
-}
-
-// Hook into saveUsers to auto-sync
-// [github hook supprimé]
-
-// ════════════════════════════════════════════
-// ANTI DEVTOOLS PROTECTION
-// ════════════════════════════════════════════
-(function() {
-  let devtoolsOpen = false;
-
-  // Method 1: size detection
-  function checkSize() {
-    const threshold = 160;
-    const widthDiff = window.outerWidth - window.innerWidth;
-    const heightDiff = window.outerHeight - window.innerHeight;
-    if (widthDiff > threshold || heightDiff > threshold) {
-      showDevtoolsWarning();
-    } else {
-      hideDevtoolsWarning();
-    }
-  }
-
-  // Method 2: debugger timing
-  function checkDebugger() {
-    const start = performance.now();
-    (function() { return false; }.toString().replace(/\s/g,''));
-    // If devtools open, debugger slows execution
-    const el = new Image();
-    Object.defineProperty(el, 'id', {
-      get: function() {
-        devtoolsOpen = true;
-        showDevtoolsWarning();
-      }
-    });
-    console.log('%c', el);
-  }
-
-  // Method 3: console.log trap
-  let consoleOpened = false;
-  const originalLog = console.log;
-  console.log = function() {
-    consoleOpened = true;
-    showDevtoolsWarning();
-    return originalLog.apply(console, arguments);
-  };
-
-  function showDevtoolsWarning() {
-    const w = document.getElementById('devtools-warning');
-    if (w) w.classList.add('show');
-    // Clear sensitive data from DOM
-    const inputs = document.querySelectorAll('input[type="password"]');
-    inputs.forEach(i => i.value = '');
-  }
-
-  function hideDevtoolsWarning() {
-    const w = document.getElementById('devtools-warning');
-    if (w) w.classList.remove('show');
-  }
-
-  // Disable right-click
-  document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    return false;
-  });
-
-  // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'F12') { e.preventDefault(); showDevtoolsWarning(); return false; }
-    if (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) { e.preventDefault(); showDevtoolsWarning(); return false; }
-    if (e.ctrlKey && ['U','u'].includes(e.key)) { e.preventDefault(); return false; }
-    if (e.ctrlKey && e.shiftKey && e.key === 'K') { e.preventDefault(); return false; }
-  });
-
-  // Check periodically
-  setInterval(checkSize, 1000);
-})();
-
-// ════════════════════════════════════════════
-// GITHUB CONFIG UI in Admin
-// ════════════════════════════════════════════
-// Inject GitHub config section into admin page after DOM ready
-document.addEventListener('DOMContentLoaded', function() {
-  // No need - will be injected dynamically
-});
-
-
-
-// ══ Override enterApp for new UI ══
-
-
-
-// ══ Page transitions ══
-
-
-
-// ══ Sidebar nav ══
-
-
-
-// ══ Home tabs ══
-function switchHomeTab(el, tabId){
-  document.querySelectorAll('.home-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-}
-
-// ══ Search tabs override ══
-
-
-
-// ══ Pass strength for new UI ══
-const _origCheckPassStrength = checkPassStrength;
 function checkPassStrength(){
   const p = document.getElementById('reg-pass').value;
   const fill = document.getElementById('pass-strength');
+  if(!fill) return;
   let score = 0;
   if(p.length >= 6) score++;
   if(/[A-Z]/.test(p)) score++;
@@ -1616,225 +1022,23 @@ function checkPassStrength(){
   fill.style.background = score ? colors[score-1] : 'transparent';
 }
 
-// ══ Notifications ══
-function getNotifications(){ try{ return JSON.parse(localStorage.getItem('ds_notifs')||'[]'); }catch(e){ return []; } }
-function saveNotifications(n){ try{ localStorage.setItem('ds_notifs',JSON.stringify(n)); }catch(e){} }
-
-
-
-
-function markRead(id){ const n=getNotifications(); const x=n.find(i=>i.id===id); if(x){x.read=true;saveNotifications(n);renderNotifPanel();} }
-function markAllRead(){ const n=getNotifications(); n.forEach(x=>x.read=true); saveNotifications(n); renderNotifPanel(); }
-function addNotification(){
-  const type=document.getElementById('notif-type').value;
-  const title=document.getElementById('notif-new-title').value.trim();
-  const body=document.getElementById('notif-new-body').value.trim();
-  const date=document.getElementById('notif-new-date').value;
-  if(!title||!body){ alert('Remplissez le titre et le message.'); return; }
-  const notifs=getNotifications();
-  notifs.push({id:Date.now().toString(),type,title,body,date:date||new Date().toLocaleDateString('fr-FR'),read:false});
-  saveNotifications(notifs);
-  document.getElementById('notif-new-title').value='';
-  document.getElementById('notif-new-body').value='';
-  renderNotifPanel(); renderAdminNotifs();
-}
-function renderAdminNotifs(){
-  const notifs=getNotifications();
-  const list=document.getElementById('notif-list-admin');
-  if(!list) return;
-  if(!notifs.length){ list.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px">Aucune notification publiée</div>'; return; }
-  list.innerHTML=[...notifs].reverse().map(n=>
-    `<div class="notif-admin-item">
-      <div class="notif-admin-item-text"><strong style="color:var(--text)">[${n.type.toUpperCase()}]</strong> ${n.title} — ${n.date}</div>
-      <button class="btn-del-notif" onclick="deleteNotif('${n.id}')">Supprimer</button>
-    </div>`).join('');
-}
-function deleteNotif(id){ const n=getNotifications().filter(x=>x.id!==id); saveNotifications(n); renderNotifPanel(); renderAdminNotifs(); }
-document.addEventListener('click', function(e){
-  const panel=document.getElementById('notif-panel');
-  if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&!e.target.closest('.tb-notif-btn')) panel.classList.remove('show');
-});
-
-// ══ GitHub Sync ══
-function getGithubConfig(){ try{ const r=localStorage.getItem('ds_gh_config'); if(!r) return null; const c=JSON.parse(r); if(c.tokenEnc) c.token=c.tokenEnc.map(x=>String.fromCharCode(x^99)).join(''); return c; }catch(e){ return null; } }
-function setGithubConfig(owner,repo,path,token){ const e=Array.from(token).map(c=>c.charCodeAt(0)^99); localStorage.setItem('ds_gh_config',JSON.stringify({owner,repo,path,tokenEnc:e})); }
-async function syncUsersToGithub(users){
-  const cfg=getGithubConfig(); if(!cfg) return;
-  const el=document.getElementById('gh-dot'); const txt=document.getElementById('gh-status-text');
-  const statusDiv=document.getElementById('github-status');
-  if(statusDiv) statusDiv.style.display='flex';
-  if(el) el.className='gh-dot syncing';
-  if(txt) txt.textContent='Synchronisation...';
-  const safe={};
-  Object.entries(users).forEach(([k,u])=>{ safe[k]={username:u.username,email:u.email,plan:u.plan,since:u.since,status:u.status,searches:u.searches}; });
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(safe,null,2))));
-  try{
-    let sha='';
-    const g=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`,{headers:{'Authorization':`token ${cfg.token}`,'Accept':'application/vnd.github.v3+json'}});
-    if(g.ok){const d=await g.json();sha=d.sha||'';}
-    const p=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`,{method:'PUT',headers:{'Authorization':`token ${cfg.token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify({message:`sync: ${new Date().toISOString()}`,content,sha})});
-    if(p.ok){if(el)el.className='gh-dot ok';if(txt)txt.textContent='Synchronisé ✓ '+new Date().toLocaleTimeString('fr-FR');}
-    else throw new Error('GitHub API: '+p.status);
-  }catch(e){if(el)el.className='gh-dot err';if(txt)txt.textContent='Erreur: '+e.message;}
-}
-const _origSaveUsers2=saveUsers;
-// [github hook2 supprimé]
-
-// ══ Admin override ══
-
-
-
-// ══ Anti-devtools ══
-(function(){
-  function showW(){ const w=document.getElementById('devtools-warning'); if(w) w.classList.add('show'); }
-  function hideW(){ const w=document.getElementById('devtools-warning'); if(w) w.classList.remove('show'); }
-  function checkSize(){ const th=160; if(window.outerWidth-window.innerWidth>th||window.outerHeight-window.innerHeight>th) showW(); else hideW(); }
-  document.addEventListener('contextmenu',e=>e.preventDefault());
-  document.addEventListener('keydown',e=>{
-    if(e.key==='F12'){e.preventDefault();showW();return false;}
-    if(e.ctrlKey&&e.shiftKey&&['I','i','J','j','C','c'].includes(e.key)){e.preventDefault();showW();return false;}
-    if(e.ctrlKey&&['U','u'].includes(e.key)){e.preventDefault();return false;}
-  });
-  setInterval(checkSize,1000);
-})();
-
-// ══ Modal close on outside click ══
-document.getElementById('plan-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-
-// ══ Auto-login ══
-(function(){
-  const sess=getSession();
-  if(sess){ const users=getUsers(); const account=users[sess.username]; if(account&&account.status!=='banni') enterApp(account); }
-})();
-
-
-// ══ doSearch avancé — filtres combinés + filtre local ══
-const _origDoSearch = doSearch;
-async function doSearch(mode) {
-  if (mode !== 'breach') { _origDoSearch(mode); return; }
-
-  const sess = getSession(); if (!sess) return;
-  const users = getUsers(); const account = users[sess.username];
-  const limit = getSearchLimit(account.plan);
-  const today = new Date().toDateString();
-  if (account.lastSearchDay !== today) { account.searches = 0; account.lastSearchDay = today; }
-  if (account.searches >= limit && limit !== Infinity) {
-    const w = document.getElementById('search-limit-warn');
-    w.textContent = '⚠ LIMITE ATTEINTE (' + limit + '/jour) — Passez au plan supérieur.';
-    w.classList.add('show'); return;
-  }
-
-  const email    = (document.getElementById('s-email')?.value       || '').trim();
-  const tel      = (document.getElementById('s-telephone')?.value   || '').trim();
-  const nom      = (document.getElementById('s-nom')?.value         || '').trim();
-  const prenom   = (document.getElementById('s-prenom')?.value      || '').trim();
-  const username = (document.getElementById('s-username')?.value    || '').trim();
-  const ip       = (document.getElementById('s-ip')?.value          || '').trim();
-  const domaine  = (document.getElementById('s-domaine')?.value     || '').trim();
-  const ville    = (document.getElementById('s-ville')?.value       || '').trim();
-  const dept     = (document.getElementById('s-departement')?.value || '').trim();
-  const pays     = (document.getElementById('s-pays')?.value        || '').trim();
-
-  let query = email || tel || username || ip || domaine;
-  if (!query && (prenom || nom)) query = [prenom, nom].filter(Boolean).join(' ');
-  if (!query) query = ville || dept || pays;
-  if (!query) { alert('Veuillez renseigner au moins un critère.'); return; }
-
-  document.getElementById('search-limit-warn').classList.remove('show');
-  document.getElementById('results-section').style.display = 'block';
-  document.getElementById('results-placeholder').style.display = 'none';
-  const lst = document.getElementById('results-list');
-  lst.innerHTML = '<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours...</div></div>';
-
-  account.searches = (account.searches || 0) + 1;
-  users[sess.username] = account; saveUsers(users); setSession(account); updateSearchDisplay(account);
-
-  try {
-    const r = await fetch(_W() + '?q=' + encodeURIComponent(query) + '&action=breach', {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(60000)
-    });
-    if (!r.ok) throw new Error('Erreur serveur HTTP ' + r.status);
-    const data = await r.json();
-    if (!data.success) throw new Error(data.error || 'Erreur API');
-
-    let results = data.data?.breach?.data?.results || [];
-
-    if (results.length > 0 && (nom || prenom || ville || dept || pays || tel || ip)) {
-      results = results.filter(rec => {
-        const str = JSON.stringify(rec).toLowerCase();
-        if (nom    && !str.includes(nom.toLowerCase()))    return false;
-        if (prenom && !str.includes(prenom.toLowerCase())) return false;
-        if (ville  && !str.includes(ville.toLowerCase()))  return false;
-        if (dept   && !str.includes(dept.toLowerCase()))   return false;
-        if (pays   && !str.includes(pays.toLowerCase()))   return false;
-        if (tel    && !str.includes(tel.toLowerCase()))    return false;
-        if (ip     && !str.includes(ip.toLowerCase()))     return false;
-        return true;
-      });
-      data.data.breach.data.results = results;
-    }
-
-    renderResults(data.data, 'breach', query, lst);
-
-  } catch(e) {
-    lst.innerHTML = '<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red)">Erreur : ' + e.message + '</div><button onclick="doSearch('breach')" style="margin-top:14px;padding:9px 20px;background:var(--blue3);border:1px solid rgba(79,142,247,0.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">🔄 Réessayer</button></div>';
-  }
-}
-
-// ══ Page transitions ══
-function showPage(id) {
-  const current = document.querySelector('.page.active');
-  if (current) current.classList.remove('active');
-  const next = document.getElementById('page-' + id);
-  if (!next) return;
-  next.classList.add('active');
-}
-
-// ══ Sidebar nav ══
-function sideNav(el, page) {
-  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
-  showPage(page);
-  if (page === 'admin') refreshAdminTable();
-}
-
-// ══ switchTab override ══
-const _origSwitchTab2 = switchTab;
-function switchTab(el, id) {
-  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  const tab = document.getElementById('tab-' + id);
-  if (tab) tab.classList.add('active');
-  document.getElementById('results-section').style.display = 'none';
-  document.getElementById('results-placeholder').style.display = 'flex';
-  document.getElementById('results-list').innerHTML = '';
-}
-
-// ══ FAQ accordion ══
-function toggleFaq(item) {
-  const isOpen = item.classList.contains('open');
-  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-  if (!isOpen) item.classList.add('open');
-}
-
-// ══ enterApp override ══
-function enterApp(account) {
+// ── Session ──────────────────────────────────────────
+function enterApp(account){
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display = 'block';
+  // Topbar
   document.getElementById('topbar-avatar-letter').textContent = account.username[0].toUpperCase();
   document.getElementById('sb-avatar-letter').textContent = account.username[0].toUpperCase();
   document.getElementById('sb-username').textContent = account.username;
-  document.getElementById('sb-usertag').textContent = '@' + account.username;
+  document.getElementById('sb-usertag').textContent = '@'+account.username;
   const pb = document.getElementById('sb-plan-badge');
-  pb.textContent = account.plan.charAt(0).toUpperCase() + account.plan.slice(1);
-  pb.className = 'sb-plan-badge plan-' + account.plan;
+  pb.textContent = account.plan.charAt(0).toUpperCase()+account.plan.slice(1);
+  pb.className = 'sb-plan-badge plan-'+account.plan;
   const users = getUsers();
   document.getElementById('online-count').textContent = Object.keys(users).length;
-  if (account.role === 'admin') document.getElementById('sb-admin').style.display = '';
+  if(account.role === 'admin') document.getElementById('sb-admin').style.display = '';
+  else document.getElementById('sb-admin').style.display = 'none';
   updateSearchDisplay(account);
   initSnake();
   startClock();
@@ -1844,253 +1048,467 @@ function enterApp(account) {
   animCount(document.getElementById('stat-users'), Object.keys(users).length);
   renderNotifPanel();
   const dp = document.getElementById('notif-new-date');
-  if (dp) dp.value = new Date().toISOString().split('T')[0];
+  if(dp) dp.value = new Date().toISOString().split('T')[0];
+  // Remplir page compte
+  updateComptePage(account);
 }
 
-// ══ Pass strength ══
-function checkPassStrength() {
-  const p = document.getElementById('reg-pass').value;
-  const fill = document.getElementById('pass-strength');
-  let score = 0;
-  if (p.length >= 6) score++;
-  if (/[A-Z]/.test(p)) score++;
-  if (/[0-9]/.test(p)) score++;
-  if (/[^A-Za-z0-9]/.test(p)) score++;
-  const colors = ['#ef4444','#f59e0b','#3b82f6','#22c55e'];
-  const widths = ['25%','50%','75%','100%'];
-  fill.style.width = score ? widths[score-1] : '0';
-  fill.style.background = score ? colors[score-1] : 'transparent';
+function updateSearchDisplay(account){
+  const limit = getSearchLimit(account.plan);
+  const left = limit === Infinity ? '∞' : Math.max(0, limit - (account.searches||0));
+  const el = document.getElementById('search-limit-display');
+  if(el) el.textContent = left + (limit === Infinity ? '' : '/'+limit);
 }
 
-// ══ Notifications ══
-function getNotifications() { try { return JSON.parse(localStorage.getItem('ds_notifs') || '[]'); } catch(e) { return []; } }
-function saveNotifications(n) { try { localStorage.setItem('ds_notifs', JSON.stringify(n)); } catch(e) {} }
-function renderNotifPanel() {
-  const notifs = getNotifications();
-  const unread = notifs.filter(n => !n.read);
-  const badge = document.getElementById('notif-badge');
-  if (unread.length > 0) { badge.textContent = unread.length > 9 ? '9+' : unread.length; badge.classList.add('show'); }
-  else badge.classList.remove('show');
-  const list = document.getElementById('notif-list');
-  if (!notifs.length) { list.innerHTML = '<div class="notif-empty">Aucune notification</div>'; return; }
-  const tc = { update:'type-update', info:'type-info', alert:'type-alert', urgent:'type-urgent' };
-  const tl = { update:'✅ Mise à jour', info:'ℹ️ Info', alert:'⚠️ Alerte', urgent:'🚨 Urgent' };
-  list.innerHTML = [...notifs].reverse().map(n =>
-    `<div class="notif-item ${n.read?'':'unread'}" onclick="markRead('${n.id}')">
-      <div class="ni-type ${tc[n.type]||'type-info'}">${tl[n.type]||n.type}</div>
-      <div class="ni-title">${n.title}</div><div class="ni-body">${n.body}</div><div class="ni-date">${n.date}</div>
-    </div>`).join('');
-}
-function toggleNotifPanel() { document.getElementById('notif-panel').classList.toggle('show'); }
-function markRead(id) { const n=getNotifications(); const x=n.find(i=>i.id===id); if(x){x.read=true;saveNotifications(n);renderNotifPanel();} }
-function markAllRead() { const n=getNotifications(); n.forEach(x=>x.read=true); saveNotifications(n); renderNotifPanel(); }
-function addNotification() {
-  const type=document.getElementById('notif-type').value;
-  const title=document.getElementById('notif-new-title').value.trim();
-  const body=document.getElementById('notif-new-body').value.trim();
-  const date=document.getElementById('notif-new-date').value;
-  if(!title||!body){ alert('Remplissez le titre et le message.'); return; }
-  const notifs=getNotifications();
-  notifs.push({id:Date.now().toString(),type,title,body,date:date||new Date().toLocaleDateString('fr-FR'),read:false});
-  saveNotifications(notifs);
-  document.getElementById('notif-new-title').value='';
-  document.getElementById('notif-new-body').value='';
-  renderNotifPanel(); renderAdminNotifs();
-}
-function renderAdminNotifs() {
-  const notifs=getNotifications(); const list=document.getElementById('notif-list-admin'); if(!list) return;
-  if(!notifs.length){ list.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px">Aucune notification publiée</div>'; return; }
-  list.innerHTML=[...notifs].reverse().map(n=>
-    `<div class="notif-admin-item"><div class="notif-admin-item-text"><strong style="color:var(--text)">[${n.type.toUpperCase()}]</strong> ${n.title} — ${n.date}</div>
-    <button class="btn-del-notif" onclick="deleteNotif('${n.id}')">Supprimer</button></div>`).join('');
-}
-function deleteNotif(id) { const n=getNotifications().filter(x=>x.id!==id); saveNotifications(n); renderNotifPanel(); renderAdminNotifs(); }
-document.addEventListener('click', e => {
-  const p=document.getElementById('notif-panel');
-  if(p&&p.classList.contains('show')&&!p.contains(e.target)&&!e.target.closest('.tb-notif-btn')) p.classList.remove('show');
-});
-
-// ══ GitHub Sync ══
-function getGithubConfig(){try{const r=localStorage.getItem('ds_gh_config');if(!r)return null;const c=JSON.parse(r);if(c.tokenEnc)c.token=c.tokenEnc.map(x=>String.fromCharCode(x^99)).join('');return c;}catch(e){return null;}}
-function setGithubConfig(owner,repo,path,token){const e=Array.from(token).map(c=>c.charCodeAt(0)^99);localStorage.setItem('ds_gh_config',JSON.stringify({owner,repo,path,tokenEnc:e}));}
-async function syncUsersToGithub(users){
-  const cfg=getGithubConfig();if(!cfg)return;
-  const el=document.getElementById('gh-dot'),txt=document.getElementById('gh-status-text'),sd=document.getElementById('github-status');
-  if(sd)sd.style.display='flex';if(el)el.className='gh-dot syncing';if(txt)txt.textContent='Synchronisation...';
-  const safe={};Object.entries(users).forEach(([k,u])=>{safe[k]={username:u.username,email:u.email,plan:u.plan,since:u.since,status:u.status,searches:u.searches};});
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(safe,null,2))));
-  try{let sha='';const g=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`,{headers:{'Authorization':`token ${cfg.token}`,'Accept':'application/vnd.github.v3+json'}});if(g.ok){const d=await g.json();sha=d.sha||'';}
-  const p=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`,{method:'PUT',headers:{'Authorization':`token ${cfg.token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify({message:`sync: ${new Date().toISOString()}`,content,sha})});
-  if(p.ok){if(el)el.className='gh-dot ok';if(txt)txt.textContent='Synchronisé ✓ '+new Date().toLocaleTimeString('fr-FR');}else throw new Error('GitHub API: '+p.status);}
-  catch(e){if(el)el.className='gh-dot err';if(txt)txt.textContent='Erreur: '+e.message;}
-}
-const _origSU=saveUsers;
-// [github hook3 supprimé]
-
-// ══ Admin override ══
-const _origRA=refreshAdminTable;
-function refreshAdminTable(){_origRA();renderAdminNotifs();}
-
-// ══ Anti-devtools ══
-(function(){
-  function showW(){const w=document.getElementById('devtools-warning');if(w)w.classList.add('show');}
-  function hideW(){const w=document.getElementById('devtools-warning');if(w)w.classList.remove('show');}
-  function checkSize(){const th=160;if(window.outerWidth-window.innerWidth>th||window.outerHeight-window.innerHeight>th)showW();else hideW();}
-  document.addEventListener('contextmenu',e=>e.preventDefault());
-  document.addEventListener('keydown',e=>{
-    if(e.key==='F12'){e.preventDefault();showW();return false;}
-    if(e.ctrlKey&&e.shiftKey&&['I','i','J','j','C','c'].includes(e.key)){e.preventDefault();showW();return false;}
-    if(e.ctrlKey&&['U','u'].includes(e.key)){e.preventDefault();return false;}
-  });
-  setInterval(checkSize,1000);
-})();
-
-// ══ Modals ══
-document.getElementById('plan-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
-
-// ══ Auto-login ══
-(function(){
-  const sess=getSession();
-  if(sess){const users=getUsers();const account=users[sess.username];if(account&&account.status!=='banni')enterApp(account);}
-})();
-
-
-// ════════════════════════════════════════════
-// JSONBIN.IO — Sauvegarde cloud des comptes
-// ════════════════════════════════════════════
-
-// Config JSONBin — stockée chiffrée dans localStorage
-// Clé JSONBin intégrée (XOR-77)
-const _JB_KEY_ENC = [105,127,44,105,124,125,105,9,28,117,3,39,23,52,59,28,8,116,39,3,58,10,24,4,55,25,20,20,99,10,116,38,98,35,39,20,63,57,98,57,39,15,1,61,37,63,31,63,37,55,38,116,10,2,9,60,38,56,52,6];
-function _decodeJBKey() { return _JB_KEY_ENC.map(c => String.fromCharCode(c ^ 77)).join(''); }
-
-function getJsonBinConfig() {
-  try {
-    // Récupère le binId depuis localStorage si déjà créé
-    const binId = localStorage.getItem('ds_jb_binid') || '';
-    return { key: _decodeJBKey(), binId };
-  } catch(e) { return { key: _decodeJBKey(), binId: '' }; }
+function getSearchLimit(plan){
+  return plan==='free'?10 : plan==='starter'?100 : Infinity;
 }
 
-function setJsonBinConfig(apiKey, binId) {
-  // Garde uniquement le binId (la clé est dans le code)
-  if (binId) localStorage.setItem('ds_jb_binid', binId);
-  updateJsonBinStatus('configured');
+// ── Compte page ──────────────────────────────────────
+function updateComptePage(account){
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('compte-username', account.username);
+  set('compte-email', account.email||'—');
+  set('compte-plan', account.plan.charAt(0).toUpperCase()+account.plan.slice(1));
+  set('compte-searches', account.searches||0);
+  set('compte-since', account.since||'—');
 }
 
-function updateJsonBinStatus(state, msg) {
-  const dot = document.getElementById('jb-dot');
-  const txt = document.getElementById('jb-status-text');
-  const wrap = document.getElementById('jsonbin-status');
-  if (!dot || !txt) return;
-  if (wrap) wrap.style.display = 'flex';
-  const states = {
-    idle:         { cls: 'jb-idle',    label: 'JSONBin non configuré' },
-    configured:   { cls: 'jb-ok',      label: 'JSONBin configuré ✓' },
-    syncing:      { cls: 'jb-syncing', label: 'Synchronisation...' },
-    ok:           { cls: 'jb-ok',      label: msg || 'Synchronisé ✓ ' + new Date().toLocaleTimeString('fr-FR') },
-    error:        { cls: 'jb-err',     label: msg || 'Erreur de synchronisation' },
-  };
-  const s = states[state] || states.idle;
-  dot.className = 'jb-dot ' + s.cls;
-  txt.textContent = s.label;
+function changePassword(){
+  const curr    = document.getElementById('pass-current').value;
+  const newPass = document.getElementById('pass-new').value;
+  const conf    = document.getElementById('pass-confirm').value;
+  const errEl   = document.getElementById('pass-error');
+  const okEl    = document.getElementById('pass-success');
+  function showErr(msg){ errEl.textContent='⚠ '+msg; errEl.className='compte-msg compte-error show'; okEl.className='compte-msg compte-success'; }
+  function showOk(msg){ okEl.textContent='✓ '+msg; okEl.className='compte-msg compte-success show'; errEl.className='compte-msg compte-error'; }
+  const sess = getSession(); if(!sess) return;
+  const users = getUsers();
+  const account = users[sess.username];
+  if(!account){ showErr('Session expirée.'); return; }
+  if(account.password !== curr){ showErr('Mot de passe actuel incorrect.'); return; }
+  if(newPass.length < 6){ showErr('Le nouveau mot de passe doit faire au moins 6 caractères.'); return; }
+  if(newPass !== conf){ showErr('Les mots de passe ne correspondent pas.'); return; }
+  account.password = newPass;
+  users[sess.username] = account;
+  saveUsers(users);
+  setSession(account);
+  showOk('Mot de passe modifié avec succès !');
+  document.getElementById('pass-current').value = '';
+  document.getElementById('pass-new').value = '';
+  document.getElementById('pass-confirm').value = '';
 }
 
-async function syncUsersToJsonBin(users) {
-  const cfg = getJsonBinConfig();
-  if (!cfg || !cfg.key) return;
+// ── Navigation ───────────────────────────────────────
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const p = document.getElementById('page-'+id);
+  if(p) p.classList.add('active');
+}
 
-  updateJsonBinStatus('syncing');
-
-  // Safe copy — no passwords exported
-  const safe = {};
-  Object.entries(users).forEach(([k, u]) => {
-    safe[k] = {
-      username: u.username,
-      email: u.email || '',
-      plan: u.plan,
-      since: u.since || '',
-      status: u.status || 'actif',
-      searches: u.searches || 0
-    };
-  });
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Master-Key': cfg.key,
-    'X-Bin-Private': 'true'
-  };
-
-  try {
-    if (!cfg.binId) {
-      // Créer un nouveau bin
-      const res = await fetch('https://api.jsonbin.io/v3/b', {
-        method: 'POST',
-        headers: { ...headers, 'X-Bin-Name': 'darksearcher-users' },
-        body: JSON.stringify({ users: safe, lastSync: new Date().toISOString() })
-      });
-      if (!res.ok) throw new Error('Création bin échouée: HTTP ' + res.status);
-      const data = await res.json();
-      const newBinId = data.metadata?.id;
-      if (newBinId) {
-        // Save bin ID
-        const raw = JSON.parse(localStorage.getItem('ds_jb_config') || '{}');
-        raw.binId = newBinId;
-        localStorage.setItem('ds_jb_binid', newBinId);
-        cfg.binId = newBinId;
-      }
-    } else {
-      // Mettre à jour le bin existant
-      const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ users: safe, lastSync: new Date().toISOString() })
-      });
-      if (!res.ok) throw new Error('Mise à jour échouée: HTTP ' + res.status);
-    }
-    updateJsonBinStatus('ok');
-  } catch(e) {
-    updateJsonBinStatus('error', 'Erreur: ' + e.message);
+function sideNav(el, page){
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  showPage(page);
+  if(page === 'admin') refreshAdminTable();
+  if(page === 'compte'){
+    const sess = getSession();
+    if(sess){ const users=getUsers(); updateComptePage(users[sess.username]||{}); }
   }
 }
 
-// Charger les comptes depuis JSONBin au démarrage (si localStorage vide)
-async function loadUsersFromJsonBin() {
-  const cfg = getJsonBinConfig();
-  if (!cfg || !cfg.key || !cfg.binId) return;
-  const existing = localStorage.getItem('ds_users');
-  // Ne pas écraser si déjà des données locales
-  if (existing && Object.keys(JSON.parse(existing)).length > 1) return;
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}/latest`, {
-      headers: { 'X-Master-Key': cfg.key }
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    const remoteUsers = data.record?.users;
-    if (remoteUsers && typeof remoteUsers === 'object') {
-      // Merge: keep local admin password, import others
-      const local = getUsers();
-      const merged = { ...remoteUsers };
-      if (local['admin']) merged['admin'] = local['admin']; // preserve admin
-      localStorage.setItem('ds_users', JSON.stringify(merged));
-      updateJsonBinStatus('ok', 'Comptes chargés depuis le cloud ✓');
-    }
-  } catch(e) { /* silencieux */ }
+// ── Tabs ─────────────────────────────────────────────
+function switchTab(el, id){
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-'+id);
+  if(tab) tab.classList.add('active');
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('results-placeholder').style.display = 'flex';
+  document.getElementById('results-list').innerHTML = '';
 }
 
-// Hook saveUsers → sync automatique
-// [jsonbin hook supprimé]
+// ── Recherche ────────────────────────────────────────
+async function doSearch(mode){
+  const sess = getSession(); if(!sess) return;
+  const users = getUsers(); const account = users[sess.username];
+  if(!account) return;
 
-// Init au chargement
-(async function() {
-  await loadUsersFromJsonBin();
-  updateJsonBinStatus('configured');
+  const limit = getSearchLimit(account.plan);
+  const today = new Date().toDateString();
+  if(account.lastSearchDay !== today){ account.searches = 0; account.lastSearchDay = today; }
+  if(account.searches >= limit && limit !== Infinity){
+    const w = document.getElementById('search-limit-warn');
+    w.textContent = '⚠ LIMITE ATTEINTE ('+limit+'/jour) — Passez au plan supérieur.';
+    w.classList.add('show'); return;
+  }
+
+  let query = '';
+  let filters = {};
+
+  if(mode === 'breach'){
+    const email    = (document.getElementById('s-email')?.value       || '').trim();
+    const tel      = (document.getElementById('s-telephone')?.value   || '').trim();
+    const nom      = (document.getElementById('s-nom')?.value         || '').trim();
+    const prenom   = (document.getElementById('s-prenom')?.value      || '').trim();
+    const username = (document.getElementById('s-username')?.value    || '').trim();
+    const ip       = (document.getElementById('s-ip')?.value          || '').trim();
+    const domaine  = (document.getElementById('s-domaine')?.value     || '').trim();
+    const ville    = (document.getElementById('s-ville')?.value       || '').trim();
+    const dept     = (document.getElementById('s-departement')?.value || '').trim();
+    const pays     = (document.getElementById('s-pays')?.value        || '').trim();
+    // Requête principale = identifiant le plus précis
+    query = email || tel || username || ip || domaine;
+    if(!query && (prenom || nom)) query = [prenom, nom].filter(Boolean).join(' ');
+    if(!query) query = ville || dept || pays;
+    filters = { nom, prenom, ville, dept, pays, tel, ip };
+  } else if(mode === 'stealer'){
+    query = (document.getElementById('s-stealer-q')?.value || '').trim();
+  } else if(mode === 'osint'){
+    query = (document.getElementById('s-osint-q')?.value || '').trim();
+  }
+
+  if(!query){ alert('Veuillez renseigner au moins un critère.'); return; }
+
+  document.getElementById('search-limit-warn').classList.remove('show');
+  document.getElementById('results-section').style.display = 'block';
+  document.getElementById('results-placeholder').style.display = 'none';
+  const lst = document.getElementById('results-list');
+  lst.innerHTML = '<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours...</div></div>';
+
+  // Compter la recherche
+  account.searches = (account.searches || 0) + 1;
+  users[sess.username] = account;
+  saveUsers(users);
+  setSession(account);
+  updateSearchDisplay(account);
+
+  try {
+    const url = _W() + '?q=' + encodeURIComponent(query) + '&action=' + mode;
+    const r = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(60000)
+    });
+    if(!r.ok) throw new Error('Erreur serveur HTTP ' + r.status);
+    const data = await r.json();
+    if(!data.success) throw new Error(data.error || 'Erreur API');
+
+    // Filtre local sur critères secondaires (breach seulement)
+    if(mode === 'breach'){
+      let results = data.data?.breach?.data?.results || [];
+      if(results.length > 0){
+        results = results.filter(rec => {
+          const s = JSON.stringify(rec).toLowerCase();
+          if(filters.nom    && !s.includes(filters.nom.toLowerCase()))    return false;
+          if(filters.prenom && !s.includes(filters.prenom.toLowerCase())) return false;
+          if(filters.ville  && !s.includes(filters.ville.toLowerCase()))  return false;
+          if(filters.dept   && !s.includes(filters.dept.toLowerCase()))   return false;
+          if(filters.pays   && !s.includes(filters.pays.toLowerCase()))   return false;
+          if(filters.tel    && !s.includes(filters.tel.toLowerCase()))    return false;
+          if(filters.ip     && !s.includes(filters.ip.toLowerCase()))     return false;
+          return true;
+        });
+        data.data.breach.data.results = results;
+      }
+    }
+
+    renderResults(data.data, mode, query, lst);
+
+  } catch(e) {
+    lst.innerHTML = '<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red);font-size:15px">'+e.message+'</div><button onclick="doSearch(\''+mode+'\')" style="margin-top:14px;padding:9px 20px;background:var(--blue3);border:1px solid rgba(79,142,247,0.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer">🔄 Réessayer</button></div>';
+  }
+}
+
+// ── Render résultats ─────────────────────────────────
+function renderResults(data, mode, query, lst){
+  const f = (l,v,h=false) => v ? '<div class="result-field"><div class="result-field-label">'+l+'</div><div class="result-field-value'+(h?' hi':'')+'">'+v+'</div></div>' : '';
+
+  if(mode === 'breach'){
+    const results = data.breach?.data?.results || [];
+    document.getElementById('results-count').textContent = results.length + ' résultat' + (results.length>1?'s':'');
+    if(!results.length){
+      lst.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat trouvé</div><div class="no-results-sub">Requête : "'+query+'"</div></div>';
+      return;
+    }
+    const labels = { email:'EMAIL', password:'PASSWORD', username:'USERNAME', first_name:'PRÉNOM', last_name:'NOM', name:'NOM', phone_number:'TÉLÉPHONE', telephone:'TÉLÉPHONE', ip_address:'IP', address:'ADRESSE', city:'VILLE', country:'PAYS', source:'SOURCE', database:'BASE', zip:'CODE POSTAL', state:'ÉTAT', gender:'GENRE', birthdate:'NAISSANCE', website:'SITE' };
+    lst.innerHTML = results.map((rec,i) => {
+      const name = [rec.first_name||'', rec.last_name||'', rec.name||'', rec.username||''].filter(Boolean).join(' ') || 'Enregistrement #'+(i+1);
+      const src = rec.source || rec.database || rec.breach_name || '';
+      const fields = Object.entries(rec).filter(([k])=>k!=='source'&&k!=='database').map(([k,v])=>f(labels[k]||k.toUpperCase(), String(v||''), k==='email'||k==='username')).join('');
+      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar">'+name[0].toUpperCase()+'</div><div><div class="result-name">'+name+'</div><div class="result-badges"><span class="rbadge rbadge-breach">Breach</span>'+(src?'<span class="rbadge rbadge-source">'+src+'</span>':'')+'</div></div></div><span class="result-status status-breach">LEAK</span></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+    }).join('');
+
+  } else if(mode === 'stealer'){
+    const results = data.stealer?.data?.results || data.stealer?.results || [];
+    document.getElementById('results-count').textContent = results.length + ' résultat' + (results.length>1?'s':'');
+    if(!results.length){
+      lst.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun log trouvé</div><div class="no-results-sub">Requête : "'+query+'"</div></div>';
+      return;
+    }
+    lst.innerHTML = results.map((rec,i) => {
+      const fields = Object.entries(rec).map(([k,v])=>f(k.toUpperCase(), String(v||''))).join('');
+      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar amber">🦠</div><div><div class="result-name">Log #'+(i+1)+'</div><div class="result-badges"><span class="rbadge rbadge-stealer">Stealer</span></div></div></div><span class="result-status status-log">LOG</span></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+    }).join('');
+
+  } else if(mode === 'osint'){
+    const osint = data.osint;
+    if(!osint || !osint.data){
+      document.getElementById('results-count').textContent = '0 résultat';
+      lst.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat OSINT</div></div>';
+      return;
+    }
+    document.getElementById('results-count').textContent = '1 résultat';
+    const rec = osint.data?.data || osint.data || {};
+    const fields = Object.entries(rec).map(([k,v])=>f(k.toUpperCase(), typeof v==='object'?JSON.stringify(v):String(v||''))).join('');
+    lst.innerHTML = '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar">🕵️</div><div><div class="result-name">OSINT — '+osint.type+'</div><div class="result-badges"><span class="rbadge rbadge-osint">OSINT</span></div></div></div><span class="result-status status-found">TROUVÉ</span></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+  }
+}
+
+// ── Admin ────────────────────────────────────────────
+function refreshAdminTable(){
+  const users = getUsers();
+  const all = Object.values(users);
+  document.getElementById('admin-total-users').textContent = all.length;
+  document.getElementById('admin-pro-users').textContent   = all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
+  document.getElementById('admin-free-users').textContent  = all.filter(u=>u.plan==='free').length;
+  document.getElementById('admin-searches-total').textContent = all.reduce((s,u)=>s+(u.searches||0),0);
+  renderAdminTable(all);
+  renderAdminNotifs();
+}
+
+let _adminFiltered = [];
+function renderAdminTable(users){
+  _adminFiltered = users;
+  const tbody = document.getElementById('admin-table-body');
+  if(!tbody) return;
+  tbody.innerHTML = users.map(u =>
+    '<tr><td>'+u.username+'</td><td>'+(u.email||'—')+'</td><td><span class="sb-plan-badge plan-'+u.plan+'">'+u.plan+'</span></td><td>'+(u.searches||0)+'</td><td>'+(u.since||'—')+'</td><td>'+(u.status||'actif')+'</td><td><button class="admin-action-btn btn-edit" onclick="editUser(\''+u.username+'\')">Modifier</button><button class="admin-action-btn btn-delete" onclick="deleteUser(\''+u.username+'\')">Suppr.</button></td></tr>'
+  ).join('');
+}
+
+function filterAdminTable(){
+  const q = (document.getElementById('admin-search')?.value||'').toLowerCase();
+  const users = getUsers();
+  const filtered = Object.values(users).filter(u => JSON.stringify(u).toLowerCase().includes(q));
+  renderAdminTable(filtered);
+}
+
+function editUser(username){
+  const users = getUsers();
+  const u = users[username]; if(!u) return;
+  document.getElementById('edit-username-key').value = username;
+  document.getElementById('edit-plan').value   = u.plan;
+  document.getElementById('edit-status').value = u.status || 'actif';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function saveEditUser(){
+  const username = document.getElementById('edit-username-key').value;
+  const users = getUsers();
+  if(!users[username]) return;
+  users[username].plan   = document.getElementById('edit-plan').value;
+  users[username].status = document.getElementById('edit-status').value;
+  saveUsers(users);
+  document.getElementById('edit-modal').classList.remove('show');
+  refreshAdminTable();
+}
+
+function deleteUser(username){
+  if(username === 'admin'){ alert('Impossible de supprimer le compte admin.'); return; }
+  if(!confirm('Supprimer '+username+' ?')) return;
+  const users = getUsers();
+  delete users[username];
+  saveUsers(users);
+  refreshAdminTable();
+}
+
+// ── Pricing toggle ───────────────────────────────────
+let isAnnual = false;
+function toggleBill(){
+  isAnnual = !isAnnual;
+  const tog = document.getElementById('bill-tog');
+  const lm  = document.getElementById('lbl-m');
+  const la  = document.getElementById('lbl-a');
+  if(isAnnual){ tog.classList.add('on'); lm.classList.remove('active'); la.classList.add('active'); }
+  else { tog.classList.remove('on'); lm.classList.add('active'); la.classList.remove('active'); }
+  const prices = { starter:[10,8], pro:[25,20], elite:[80,64] };
+  for(const [p,[m,a]] of Object.entries(prices)){
+    const priceEl  = document.getElementById(p+'-price');
+    const periodEl = document.getElementById(p+'-period');
+    const annualEl = document.getElementById(p+'-annual');
+    if(priceEl) priceEl.textContent = isAnnual ? a : m;
+    if(periodEl) periodEl.textContent = '/ mois · '+(isAnnual?'annuel':'mensuel');
+    if(annualEl) annualEl.textContent = isAnnual ? '(-20%) économisez '+(( (m-a)*12 ))+'€/an' : ' ';
+  }
+}
+
+function openModal(plan){
+  document.getElementById('modal-plan-name').textContent = plan;
+  document.getElementById('plan-modal').classList.add('show');
+}
+
+// ── FAQ accordion ────────────────────────────────────
+function toggleFaq(item){
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+
+// ── Clock ─────────────────────────────────────────────
+function startClock(){
+  function tick(){ const el=document.getElementById('clock'); if(el) el.textContent=new Date().toLocaleTimeString('fr-FR'); }
+  tick(); setInterval(tick,1000);
+}
+
+// ── Animated counters ─────────────────────────────────
+function animCount(el, target){
+  if(!el) return;
+  let current = 0;
+  const step = Math.ceil(target / 60);
+  const iv = setInterval(()=>{
+    current = Math.min(current+step, target);
+    el.textContent = current >= 1000000 ? (current/1000000000).toFixed(1)+'Md' : current >= 1000 ? (current/1000).toFixed(0)+'k' : current;
+    if(current >= target) clearInterval(iv);
+  }, 16);
+}
+
+// ── Notifications ─────────────────────────────────────
+function getNotifications(){ try{ return JSON.parse(localStorage.getItem('ds_notifs')||'[]'); }catch(e){ return []; } }
+function saveNotifications(n){ try{ localStorage.setItem('ds_notifs',JSON.stringify(n)); }catch(e){} }
+
+function renderNotifPanel(){
+  const notifs = getNotifications();
+  const unread = notifs.filter(n=>!n.read);
+  const badge  = document.getElementById('notif-badge');
+  if(unread.length){ badge.textContent=unread.length>9?'9+':unread.length; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+  const list = document.getElementById('notif-list');
+  if(!list) return;
+  if(!notifs.length){ list.innerHTML='<div class="notif-empty">Aucune notification</div>'; return; }
+  const tc = { update:'type-update', info:'type-info', alert:'type-alert', urgent:'type-urgent' };
+  const tl = { update:'✅ Mise à jour', info:'ℹ️ Info', alert:'⚠️ Alerte', urgent:'🚨 Urgent' };
+  list.innerHTML = [...notifs].reverse().map(n =>
+    '<div class="notif-item '+(n.read?'':'unread')+'" onclick="markRead(\''+n.id+'\')"><div class="ni-type '+(tc[n.type]||'type-info')+'">'+(tl[n.type]||n.type)+'</div><div class="ni-title">'+n.title+'</div><div class="ni-body">'+n.body+'</div><div class="ni-date">'+n.date+'</div></div>'
+  ).join('');
+}
+
+function toggleNotifPanel(){ document.getElementById('notif-panel').classList.toggle('show'); }
+function markRead(id){ const n=getNotifications(); const x=n.find(i=>i.id===id); if(x){x.read=true;saveNotifications(n);renderNotifPanel();} }
+function markAllRead(){ const n=getNotifications(); n.forEach(x=>x.read=true); saveNotifications(n); renderNotifPanel(); }
+
+function addNotification(){
+  const type  = document.getElementById('notif-type').value;
+  const title = document.getElementById('notif-new-title').value.trim();
+  const body  = document.getElementById('notif-new-body').value.trim();
+  const date  = document.getElementById('notif-new-date').value;
+  if(!title||!body){ alert('Remplissez le titre et le message.'); return; }
+  const notifs = getNotifications();
+  notifs.push({ id:Date.now().toString(), type, title, body, date:date||new Date().toLocaleDateString('fr-FR'), read:false });
+  saveNotifications(notifs);
+  document.getElementById('notif-new-title').value = '';
+  document.getElementById('notif-new-body').value  = '';
+  renderNotifPanel(); renderAdminNotifs();
+}
+
+function renderAdminNotifs(){
+  const notifs = getNotifications();
+  const list = document.getElementById('notif-list-admin'); if(!list) return;
+  if(!notifs.length){ list.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px">Aucune notification publiée</div>'; return; }
+  list.innerHTML = [...notifs].reverse().map(n =>
+    '<div class="notif-admin-item"><div class="notif-admin-item-text"><strong style="color:var(--text)">['+n.type.toUpperCase()+']</strong> '+n.title+' — '+n.date+'</div><button class="btn-del-notif" onclick="deleteNotif(\''+n.id+'\')">Supprimer</button></div>'
+  ).join('');
+}
+
+function deleteNotif(id){ saveNotifications(getNotifications().filter(x=>x.id!==id)); renderNotifPanel(); renderAdminNotifs(); }
+
+document.addEventListener('click', e => {
+  const p = document.getElementById('notif-panel');
+  if(p && p.classList.contains('show') && !p.contains(e.target) && !e.target.closest('.tb-notif-btn')) p.classList.remove('show');
+});
+
+// ── Snake game ────────────────────────────────────────
+let snakeGame = null;
+function initSnake(){
+  const canvas = document.getElementById('snake-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height, cell=20;
+  let snake=[{x:10,y:5}], dir={x:1,y:0}, food=spawnFood(), score=0, running=false, loop=null;
+  const best = parseInt(localStorage.getItem('snake_best')||'0');
+  document.getElementById('snake-best').textContent = best;
+
+  function spawnFood(){ return {x:Math.floor(Math.random()*(W/cell)), y:Math.floor(Math.random()*(H/cell))}; }
+
+  function draw(){
+    ctx.fillStyle='#0d0f12'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#22c55e';
+    snake.forEach(s=>ctx.fillRect(s.x*cell,s.y*cell,cell-1,cell-1));
+    ctx.fillStyle='#4f8ef7';
+    ctx.fillRect(food.x*cell,food.y*cell,cell-1,cell-1);
+  }
+
+  function step(){
+    const head={x:snake[0].x+dir.x, y:snake[0].y+dir.y};
+    if(head.x<0||head.x>=W/cell||head.y<0||head.y>=H/cell||snake.some(s=>s.x===head.x&&s.y===head.y)){
+      clearInterval(loop); running=false;
+      ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ef4444'; ctx.font='bold 16px Inter'; ctx.textAlign='center';
+      ctx.fillText('GAME OVER — Score: '+score, W/2, H/2);
+      const b=parseInt(localStorage.getItem('snake_best')||'0');
+      if(score>b){ localStorage.setItem('snake_best',score); document.getElementById('snake-best').textContent=score; }
+      return;
+    }
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){ score++; document.getElementById('snake-score').textContent=score; food=spawnFood(); }
+    else snake.pop();
+    draw();
+  }
+
+  snakeGame = {
+    play(){ if(running) return; if(snake.length===1&&dir.x===1){ snake=[{x:10,y:5}]; dir={x:1,y:0}; score=0; document.getElementById('snake-score').textContent=0; } running=true; loop=setInterval(step,120); },
+    pause(){ clearInterval(loop); running=false; }
+  };
+  draw();
+
+  document.addEventListener('keydown', e=>{
+    const map={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
+    const nd = map[e.key];
+    if(nd && !(nd.x===-dir.x&&nd.y===-dir.y)){ dir=nd; e.preventDefault(); }
+  });
+}
+function snakePlay(){ if(snakeGame) snakeGame.play(); }
+function snakePause(){ if(snakeGame) snakeGame.pause(); }
+
+// ── Anti-devtools ─────────────────────────────────────
+(function(){
+  function showW(){ const w=document.getElementById('devtools-warning'); if(w) w.classList.add('show'); }
+  function hideW(){ const w=document.getElementById('devtools-warning'); if(w) w.classList.remove('show'); }
+  document.addEventListener('contextmenu', e=>e.preventDefault());
+  document.addEventListener('keydown', e=>{
+    if(e.key==='F12'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))){ e.preventDefault(); showW(); return false; }
+    if((e.ctrlKey||e.metaKey)&&e.key.toUpperCase()==='U'){ e.preventDefault(); return false; }
+  });
+  setInterval(()=>{ (window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160)?showW():hideW(); },1000);
 })();
 
+// ── Modals close on overlay click ────────────────────
+document.getElementById('plan-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
 
-// JSONBin auto-sync actif (config intégrée dans le code)
+// ── Enter key on login/register ───────────────────────
+document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('reg-pass2').addEventListener('keydown',e=>{ if(e.key==='Enter') doRegister(); });
+
+// ── Auto-login ────────────────────────────────────────
+(function(){
+  const sess = getSession();
+  if(sess){
+    const users = getUsers();
+    const account = users[sess.username];
+    if(account && account.status !== 'banni') enterApp(account);
+  }
+})();
 
 </script>
 </body>
