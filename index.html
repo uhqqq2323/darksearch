@@ -1875,25 +1875,8 @@ document.getElementById('edit-modal').addEventListener('click',function(e){if(e.
 })();
 
 
-// ══ doSearch avancé — multi-requêtes parallèles + filtre local ══
+// ══ doSearch avancé — filtres combinés + filtre local ══
 const _origDoSearch = doSearch;
-
-// Clé OathNet intégrée (fallback direct si worker down)
-const _OA_ENC = [3,5,85,80,83,3,84,83,84,6,80,6,87,84,3,4,6,84,82,8,9,2,80,9,80,87,4,5,82,84,87,82,1,9,83,0,87,2,1,85,87,0,1,80,4,85,83,80,85,84,5,7,80,80,7,80,82,8,5,5,6,82,84,82];
-function _getOAKey(){ return _OA_ENC.map(c=>String.fromCharCode(c^49)).join(''); }
-const _OA_BASE = 'https://oathnet.org/api/service';
-
-async function _callOathNet(endpoint, params) {
-  const url = new URL(_OA_BASE + endpoint);
-  Object.entries(params).forEach(([k,v]) => { if(v) url.searchParams.set(k,v); });
-  const r = await fetch(url.toString(), {
-    headers: { 'x-api-key': _getOAKey() },
-    signal: AbortSignal.timeout(20000)
-  });
-  if (!r.ok) throw new Error('OathNet HTTP ' + r.status);
-  return r.json();
-}
-
 async function doSearch(mode) {
   if (mode !== 'breach') { _origDoSearch(mode); return; }
 
@@ -1908,7 +1891,6 @@ async function doSearch(mode) {
     w.classList.add('show'); return;
   }
 
-  // Tous les champs
   const email    = (document.getElementById('s-email')?.value       || '').trim();
   const tel      = (document.getElementById('s-telephone')?.value   || '').trim();
   const nom      = (document.getElementById('s-nom')?.value         || '').trim();
@@ -1920,7 +1902,6 @@ async function doSearch(mode) {
   const dept     = (document.getElementById('s-departement')?.value || '').trim();
   const pays     = (document.getElementById('s-pays')?.value        || '').trim();
 
-  // Construire la requête principale
   let query = email || tel || username || ip || domaine;
   if (!query && (prenom || nom)) query = [prenom, nom].filter(Boolean).join(' ');
   if (!query) query = ville || dept || pays;
@@ -1935,44 +1916,17 @@ async function doSearch(mode) {
   account.searches = (account.searches || 0) + 1;
   users[sess.username] = account; saveUsers(users); setSession(account); updateSearchDisplay(account);
 
-  let results = [];
-
   try {
-    // Essai 1 : via Worker Cloudflare (rapide)
-    let data = null;
-    try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 10000); // 10s max pour le worker
-      const r = await fetch(_W() + '?q=' + encodeURIComponent(query) + '&action=breach', {
-        headers: { 'Accept': 'application/json' },
-        signal: ctrl.signal
-      });
-      clearTimeout(tid);
-      if (r.ok) {
-        const json = await r.json();
-        if (json.success) data = json.data;
-      }
-    } catch(workerErr) {
-      // Worker down → fallback direct OathNet
-      console.warn('Worker down, fallback OathNet direct:', workerErr.message);
-    }
+    const r = await fetch(_W() + '?q=' + encodeURIComponent(query) + '&action=breach', {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(60000)
+    });
+    if (!r.ok) throw new Error('Erreur serveur HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Erreur API');
 
-    // Essai 2 : fallback direct sur OathNet si worker a échoué
-    if (!data) {
-      lst.innerHTML = '<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Connexion directe...</div></div>';
-      try {
-        const sessData = await _callOathNet('/search/init', { query });
-        const sessId = sessData?.data?.session?.id || null;
-        const breachData = await _callOathNet('/search-breach', { q: query, ...(sessId && { search_id: sessId }) });
-        data = { breach: breachData, stealer: null, osint: null };
-      } catch(directErr) {
-        throw new Error('API inaccessible : ' + directErr.message);
-      }
-    }
+    let results = data.data?.breach?.data?.results || [];
 
-    results = data?.breach?.data?.results || [];
-
-    // Filtre local sur les critères secondaires
     if (results.length > 0 && (nom || prenom || ville || dept || pays || tel || ip)) {
       results = results.filter(rec => {
         const str = JSON.stringify(rec).toLowerCase();
@@ -1985,22 +1939,13 @@ async function doSearch(mode) {
         if (ip     && !str.includes(ip.toLowerCase()))     return false;
         return true;
       });
+      data.data.breach.data.results = results;
     }
 
-    const filteredData = {
-      ...data,
-      breach: { ...data?.breach, data: { ...data?.breach?.data, results } }
-    };
-    renderResults(filteredData, 'breach', query, lst);
+    renderResults(data.data, 'breach', query, lst);
 
   } catch(e) {
-    lst.innerHTML = `
-      <div class="no-results">
-        <div class="no-results-icon">⚠️</div>
-        <div class="no-results-title" style="color:var(--red);font-size:15px;">Erreur de connexion</div>
-        <div class="no-results-sub" style="margin-top:8px;color:var(--text2)">${e.message}</div>
-        <button onclick="doSearch('breach')" style="margin-top:16px;padding:9px 20px;background:var(--blue3);border:1px solid rgba(79,142,247,0.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">🔄 Réessayer</button>
-      </div>`;
+    lst.innerHTML = '<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red)">Erreur : ' + e.message + '</div><button onclick="doSearch('breach')" style="margin-top:14px;padding:9px 20px;background:var(--blue3);border:1px solid rgba(79,142,247,0.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;">🔄 Réessayer</button></div>';
   }
 }
 
