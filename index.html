@@ -681,6 +681,30 @@ body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);mi
         </div>
       </div>
 
+      <!-- PROXY CONFIG CARD -->
+      <div class="admin-table-wrap" style="margin-bottom:20px">
+        <div class="admin-table-header">
+          <div class="admin-table-title">⚡ Proxy API (Cloudflare Worker)</div>
+          <div id="proxy-status-badge" style="padding:4px 12px;border-radius:20px;font-size:11px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:rgba(136,136,136,0.15);border:1px solid rgba(136,136,136,0.3);color:#888">⏳ NON CONFIGURÉ</div>
+        </div>
+        <div style="padding:20px 20px 24px">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;font-family:'Rajdhani',sans-serif">
+            Entre l'URL de ton Cloudflare Worker ici. Requis pour contourner les restrictions CORS de l'API.<br>
+            <span style="color:var(--text-faint)">Exemple : <code style="color:var(--red-bright);background:var(--dark4);padding:1px 6px;border-radius:4px">https://darksearch.TON-PSEUDO.workers.dev</code></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input id="proxy-url-input" style="flex:1;min-width:260px;background:var(--dark4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color 0.2s;font-family:'Inter',sans-serif" placeholder="https://darksearch.ton-pseudo.workers.dev">
+            <button onclick="saveAndTestProxy()" style="padding:11px 20px;background:var(--red);color:white;border:none;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;box-shadow:0 0 14px var(--red-glow)">💾 Sauvegarder</button>
+            <button onclick="testProxy()" style="padding:11px 20px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer">🔌 Tester</button>
+          </div>
+          <div id="proxy-test-msg" style="margin-top:12px;font-size:12px;font-family:'Rajdhani',sans-serif;display:none"></div>
+          <div style="margin-top:14px;padding:14px;background:var(--dark4);border-radius:10px;border:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:11px;color:var(--text-faint);font-family:'Rajdhani',sans-serif;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">URL proxy active</div>
+            <div id="current-proxy-url" style="font-family:'Orbitron',monospace;font-size:12px;color:var(--red-bright);word-break:break-all">Non configuré</div>
+          </div>
+        </div>
+      </div>
+
       <div class="admin-table-wrap">
         <div class="admin-table-header">
           <div class="admin-table-title">👥 Gestion des membres</div>
@@ -1285,6 +1309,7 @@ function matchRecord(p, filters) {
 function switchTab(el,id){ document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); el.classList.add('active'); document.getElementById('tab-'+id).classList.add('active'); document.getElementById('results-section').style.display='none'; }
 function getVal(id){ const e=document.getElementById(id); return e?e.value.trim().toLowerCase():''; }
 
+
 async function doSearch(){
   const sess=getSession(); if(!sess) return;
   const users=getUsers();
@@ -1300,20 +1325,23 @@ async function doSearch(){
     return;
   }
 
-  const filters = {
-    nom: getVal('s-nom'), prenom: getVal('s-prenom'),
-    jour: getVal('s-jour'), mois: getVal('s-mois'), annee: getVal('s-annee'),
-    tel: getVal('s-telephone'), email: getVal('s-email'),
-    ville: getVal('s-ville'), cp: getVal('s-cp'),
-    username: getVal('s-username'), ip: getVal('s-ip')
-  };
+  // Récupère le critère principal (email ou username en priorité)
+  const email    = getVal('s-email');
+  const username = getVal('s-username');
+  const nom      = getVal('s-nom');
+  const prenom   = getVal('s-prenom');
+  const tel      = getVal('s-telephone');
+  const ip       = getVal('s-ip');
 
-  if(!Object.values(filters).some(v=>v)){ alert('Veuillez renseigner au moins un critère.'); return; }
+  // L'API recherche par query string — on prend le premier critère disponible
+  const query = email || username || (nom && prenom ? prenom+' '+nom : nom || prenom) || tel || ip || getVal('s-ville');
+
+  if(!query){ alert('Veuillez renseigner au moins un critère.'); return; }
 
   document.getElementById('search-limit-warn').classList.remove('show');
   const sec=document.getElementById('results-section'), lst=document.getElementById('results-list');
   sec.style.display='block';
-  lst.innerHTML=`<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Chargement des données...</div></div>`;
+  lst.innerHTML=`<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Analyse en cours...</div></div>`;
 
   account.searches=(account.searches||0)+1;
   users[sess.username]=account;
@@ -1321,81 +1349,60 @@ async function doSearch(){
   setSession(account);
   updateSearchDisplay(account);
 
-  // Recherche côté serveur
-  const baseUrl = await getServerUrl();
-  if(!baseUrl){
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-text">Serveur non configuré</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">L'admin doit configurer l'URL ngrok dans le panel admin</div></div>`;
-    return;
-  }
-
-  // Build query string from filters
-  const params = new URLSearchParams();
-  Object.entries(filters).forEach(([k,v]) => { if(v) params.append(k, v); });
-
   let res = [];
   try {
-    const r = await fetch(baseUrl + '/search?' + params.toString(), {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
       method: 'GET',
-      mode: 'cors',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(30000),
-      headers: { 'ngrok-skip-browser-warning': 'true', 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' }
     });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
-    res = data.results || [];
+    if(!data.success) throw new Error(data.message || 'Erreur API');
+    res = data.data?.results || [];
   } catch(e) {
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur serveur</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message} — Vérifie que ngrok et Python tournent</div></div>`;
+    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur API</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message}</div></div>`;
     return;
   }
 
   document.getElementById('results-count').textContent = res.length + ' résultat' + (res.length > 1 ? 's' : '');
 
   if(!res.length){
-    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat trouvé</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Essayez d'élargir vos critères</div></div>`;
+    lst.innerHTML=`<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat trouvé</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Essayez avec un email ou un nom d'utilisateur</div></div>`;
     return;
   }
 
-  lst.innerHTML = res.map((p, idx) => {
-    const nom = p.nom || '?';
-    const prenom = p.prenom || '?';
-    const ini = ((prenom[0]||'?') + (nom[0]||'?')).toUpperCase();
-    const sc = (p.statut||'').toLowerCase() === 'actif' ? 'status-active' : 'status-inactive';
+  lst.innerHTML = res.map((p, i) => {
+    const emailVal = p.email || query;
+    const ini = emailVal[0].toUpperCase();
     const f = (l,v,h=false) => `<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'highlight':''}">${v||'—'}</div></div>`;
-    // Source file badge
-    const srcLabel = p._sourceFile || 'inconnu';
-    const srcExt = p._sourceExt || '';
-    const extColors = {JSON:'rgba(34,197,94,0.15)|rgba(34,197,94,0.4)|#22c55e', TXT:'rgba(100,100,255,0.15)|rgba(100,100,255,0.4)|#7289da', SQL:'rgba(255,165,0,0.15)|rgba(255,165,0,0.4)|#ffa500', CSV:'rgba(100,200,100,0.15)|rgba(100,200,100,0.4)|#88cc88'};
-    const [bg,border,color] = (extColors[srcExt]||'rgba(136,136,136,0.15)|rgba(136,136,136,0.3)|#888').split('|');
-    const srcBadge = `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:${bg};border:1px solid ${border};color:${color};display:inline-flex;align-items:center;gap:5px;">📂 ${srcLabel} <span style="opacity:0.7">.${srcExt.toLowerCase()}</span></span>`;
-    // Collect extra fields, exclude internal
-    const known = ['nom','prenom','dateNaissance','telephone','email','adresse','ville','codePostal','pays','profession','username','ip','statut','nationalite','_sourceFile','_sourceExt'];
-    const extra = Object.keys(p).filter(k => !known.includes(k) && p[k]);
+    // Badge source
+    const srcBadge = p.source ? `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22c55e;">📂 ${p.source}</span>` : '';
+    // Champs dynamiques
+    const known = ['email','password','source','date','username','name','phone','ip','address'];
+    const extra = Object.keys(p).filter(k => !known.includes(k) && p[k] && p[k] !== '***REDACTED***');
     return `<div class="result-card">
       <div class="result-card-header">
         <div class="result-person">
           <div class="result-avatar">${ini}</div>
           <div>
-            <div class="result-name">${prenom} ${nom}</div>
+            <div class="result-name">${p.name || p.email || query}</div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <div class="result-id">#${String(idx+1).padStart(6,'0')}</div>
+              <div class="result-id">#${String(i+1).padStart(6,'0')}</div>
               ${srcBadge}
             </div>
           </div>
         </div>
-        <span class="result-status ${sc}">${p.statut||'Inconnu'}</span>
+        <span class="result-status status-active">TROUVÉ</span>
       </div>
       <div class="result-grid">
-        ${f('📅 Naissance', p.dateNaissance)}
-        ${f('📞 Téléphone', p.telephone, true)}
-        ${f('💼 Profession', p.profession)}
         ${f('📧 Email', p.email, true)}
-        ${f('🏠 Adresse', p.adresse)}
-        ${f('🏙️ Ville', [p.ville, p.codePostal].filter(Boolean).join(' '))}
-        ${f('🌍 Pays', p.pays)}
-        ${f('🪪 Nationalité', p.nationalite)}
-        ${f('👤 Username', p.username ? '@'+p.username : null, true)}
+        ${f('🔑 Mot de passe', p.password && p.password !== '***REDACTED***' ? p.password : null, true)}
+        ${f('👤 Username', p.username, true)}
+        ${f('📅 Date', p.date)}
+        ${f('📂 Source', p.source)}
+        ${f('📞 Téléphone', p.phone, true)}
         ${f('💻 IP', p.ip, true)}
+        ${f('🏠 Adresse', p.address)}
         ${extra.map(k => f('📌 '+k, p[k])).join('')}
       </div>
     </div>`;
@@ -1435,8 +1442,59 @@ function changePassword(){
 // =============================================
 // ADMIN
 // =============================================
+async function testProxy(){
+  const inp = document.getElementById('proxy-url-input');
+  const url = (inp?inp.value:getProxyUrl()).trim().replace(/\/+$/,'');
+  if(!url){ showProxyMsg('⚠️ Entre une URL d\'abord.','orange'); return; }
+  showProxyMsg('⏳ Test en cours...','#888');
+  try {
+    const r = await fetch(url+'?q=test@test.com',{signal:AbortSignal.timeout(8000),headers:{'Accept':'application/json'}});
+    const d = await r.json();
+    if(d.success !== undefined){
+      showProxyMsg('✅ Proxy opérationnel ! API joignable.','#22c55e');
+      setProxyBadge(true);
+    } else {
+      showProxyMsg('⚠️ Réponse inattendue du proxy.','orange');
+    }
+  } catch(e){
+    showProxyMsg('❌ Proxy inaccessible : '+e.message,'var(--red-bright)');
+    setProxyBadge(false);
+  }
+}
+
+function saveAndTestProxy(){
+  const inp = document.getElementById('proxy-url-input');
+  const url = (inp?inp.value:'').trim().replace(/\/+$/,'');
+  if(!url){ showProxyMsg('⚠️ Entre une URL d\'abord.','orange'); return; }
+  saveProxyUrl(url);
+  const el = document.getElementById('current-proxy-url');
+  if(el) el.textContent = url;
+  showProxyMsg('💾 URL sauvegardée ! Test...','#7289da');
+  testProxy();
+}
+
+function showProxyMsg(msg,color){
+  const el=document.getElementById('proxy-test-msg');
+  if(!el)return; el.textContent=msg; el.style.color=color; el.style.display='block';
+}
+
+function setProxyBadge(ok){
+  const b=document.getElementById('proxy-status-badge');
+  if(!b)return;
+  if(ok){ b.textContent='✅ EN LIGNE'; b.style.background='rgba(34,197,94,0.1)'; b.style.borderColor='rgba(34,197,94,0.3)'; b.style.color='#22c55e'; }
+  else { b.textContent='❌ HORS LIGNE'; b.style.background='rgba(224,28,36,0.1)'; b.style.borderColor='var(--border)'; b.style.color='var(--red-bright)'; }
+}
+
 function refreshAdminTable(){
   updateServerUrlDisplay();
+  // Load proxy URL display
+  const pu = getProxyUrl();
+  const pEl = document.getElementById('current-proxy-url');
+  const pInp = document.getElementById('proxy-url-input');
+  const pBadge = document.getElementById('proxy-status-badge');
+  if(pEl) pEl.textContent = pu || 'Non configuré';
+  if(pInp && pu) pInp.value = pu;
+  if(pBadge && pu){ pBadge.textContent='✅ CONFIGURÉ'; pBadge.style.background='rgba(34,197,94,0.1)'; pBadge.style.borderColor='rgba(34,197,94,0.3)'; pBadge.style.color='#22c55e'; }
   const users=getUsers();
   const all=Object.values(users);
   document.getElementById('admin-total-users').textContent=all.length;
