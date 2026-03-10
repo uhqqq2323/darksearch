@@ -942,9 +942,181 @@ function showLogin(){ document.getElementById('register-page').classList.remove(
 function showRegister(){ document.getElementById('login-page').classList.remove('show'); document.getElementById('register-page').classList.add('show'); }
 
 // =============================================
-// DATA ENGINE — lit JSON / TXT / SQL depuis /data/
+// SEARCH ENGINE — API OathNet via Cloudflare Worker
 // =============================================
+const _W = 'https://throbbing-queen-d9dd.leodu93100k.workers.dev';
 
+async function doSearch(mode) {
+  const sess = getSession(); if(!sess) return;
+  const users = getUsers();
+  const account = users[sess.username];
+  const limit = getSearchLimit(account.plan);
+  const today = new Date().toDateString();
+  if(account.lastSearchDay !== today){ account.searches = 0; account.lastSearchDay = today; }
+
+  if(account.searches >= limit && limit !== Infinity){
+    const warn = document.getElementById('search-limit-warn');
+    warn.textContent = `⚠️ Limite atteinte (${limit} recherches/jour). Passez au plan supérieur.`;
+    warn.classList.add('show');
+    return;
+  }
+
+  // Construire la query selon le mode
+  let query = '';
+  if(mode === 'breach'){
+    const email    = (document.getElementById('s-email')?.value||'').trim();
+    const username = (document.getElementById('s-username')?.value||'').trim();
+    const tel      = (document.getElementById('s-telephone')?.value||'').trim();
+    const ip       = (document.getElementById('s-ip')?.value||'').trim();
+    const nom      = (document.getElementById('s-nom')?.value||'').trim().toLowerCase();
+    const prenom   = (document.getElementById('s-prenom')?.value||'').trim().toLowerCase();
+    const domaine  = (document.getElementById('s-domaine')?.value||'').trim();
+    query = email || tel || username || ip || domaine
+         || (nom && prenom ? prenom+' '+nom : nom || prenom) || '';
+  } else if(mode === 'stealer'){
+    query = (document.getElementById('s-stealer-q')?.value||'').trim();
+  } else if(mode === 'osint'){
+    query = (document.getElementById('s-osint-q')?.value||'').trim();
+  }
+
+  if(!query){ alert('Veuillez renseigner au moins un critère.'); return; }
+
+  document.getElementById('search-limit-warn').classList.remove('show');
+  const sec = document.getElementById('results-section');
+  const lst = document.getElementById('results-list');
+  sec.style.display = 'block';
+  lst.innerHTML = `<div class="loading-state"><div class="loader"></div><div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-faint);letter-spacing:2px;text-transform:uppercase">Analyse en cours...</div></div>`;
+
+  account.searches = (account.searches||0) + 1;
+  users[sess.username] = account;
+  saveUsers(users); setSession(account); updateSearchDisplay(account);
+
+  try {
+    const r = await fetch(`${_W}?q=${encodeURIComponent(query)}&action=${mode}`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(25000)
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if(!data.success) throw new Error(data.error || 'Erreur API');
+    renderResults(data.data, mode, query, lst);
+  } catch(e) {
+    lst.innerHTML = `<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-text">Erreur</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">${e.message}</div></div>`;
+  }
+}
+
+function renderResults(data, mode, query, lst) {
+  const f = (l,v,h=false) => v ? `<div class="result-field"><div class="result-field-label">${l}</div><div class="result-field-value ${h?'highlight':''}"><span>${v}</span></div></div>` : '';
+  const bdg = (label, color='#22c55e') => `<span style="padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;letter-spacing:1px;background:${color}22;border:1px solid ${color}55;color:${color}">${label}</span>`;
+  let cards = [];
+
+  if(mode === 'breach'){
+    const results = data.breach?.data?.results || [];
+    document.getElementById('results-count').textContent = results.length + ' résultat' + (results.length>1?'s':'');
+    if(!results.length){
+      lst.innerHTML = `<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucune fuite trouvée pour "${query}"</div></div>`;
+      return;
+    }
+    const labels = {
+      email:'📧 Email', password:'🔑 Password', username:'👤 Username',
+      first_name:'👤 Prénom', last_name:'👤 Nom', name:'👤 Nom complet',
+      phone_number:'📞 Téléphone', tel_voip:'📞 Tel VOIP', number:'📞 Numéro',
+      birth_date:'📅 Naissance', user_birth_date:'📅 Date naissance',
+      birth_city:'🏙️ Ville naissance', address_street:'🏠 Adresse',
+      address_city:'🏙️ Ville', address_zip:'📮 Code postal',
+      country:'🌍 Pays', ip:'💻 IP', source:'📂 Source', date:'📅 Date fuite',
+      gender:'⚧ Genre', occupation:'💼 Profession', company:'🏢 Entreprise',
+    };
+    const knownFields = Object.keys(labels);
+    const highlightFields = ['email','password','username','phone_number','number','ip'];
+    cards = results.map((p,i) => {
+      const ini = (p.email||p.username||p.first_name||query)[0]?.toUpperCase()||'?';
+      const name = [p.first_name,p.last_name].filter(Boolean).join(' ') || p.email || p.username || query;
+      const extra = Object.keys(p).filter(k => !knownFields.includes(k) && k!=='_id' && p[k] && p[k]!=='***REDACTED***');
+      return `<div class="result-card">
+        <div class="result-card-header">
+          <div class="result-person"><div class="result-avatar">${ini}</div>
+            <div><div class="result-name">${name}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">${bdg('🔓 BREACH','#e01c24')}${p.source?bdg('📂 '+p.source,'#22c55e'):''}</div>
+            </div>
+          </div>
+          <span class="result-status status-active">FUITE</span>
+        </div>
+        <div class="result-grid">
+          ${knownFields.filter(k=>p[k]&&(k!=='password'||p[k]!=='***REDACTED***')).map(k=>f(labels[k],String(p[k]),highlightFields.includes(k))).join('')}
+          ${extra.map(k=>f('📌 '+k,String(p[k]))).join('')}
+        </div></div>`;
+    });
+  }
+
+  else if(mode === 'stealer'){
+    const raw = data.stealer?.data || {};
+    const arr = Array.isArray(raw) ? raw : (raw.results||raw.profiles||raw.logs||[]);
+    document.getElementById('results-count').textContent = arr.length + ' log' + (arr.length>1?'s':'');
+    if(!arr.length){
+      lst.innerHTML = `<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun stealer log pour "${query}"</div></div>`;
+      return;
+    }
+    cards = arr.map((p,i) => {
+      const ini = (p.email||p.victim||p.machine||query)[0]?.toUpperCase()||'?';
+      const creds = p.credentials||p.passwords||[];
+      return `<div class="result-card">
+        <div class="result-card-header">
+          <div class="result-person"><div class="result-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">${ini}</div>
+            <div><div class="result-name">${p.email||p.victim||p.machine||query}</div>
+              <div style="display:flex;gap:6px;margin-top:4px">${bdg('🦠 STEALER','#f59e0b')}${p.stealer?bdg(p.stealer,'#888'):''}</div>
+            </div>
+          </div>
+          <span class="result-status" style="background:rgba(245,158,11,0.1);color:#f59e0b;border-color:rgba(245,158,11,0.3)">LOG</span>
+        </div>
+        <div class="result-grid">
+          ${f('📧 Email',p.email,true)}${f('💻 Machine',p.machine||p.computer_name)}
+          ${f('🌐 IP',p.ip,true)}${f('📅 Date',p.date||p.log_date)}${f('🦠 Stealer',p.stealer||p.malware)}${f('🌍 Pays',p.country)}
+          ${creds.length?`<div class="result-field" style="grid-column:1/-1"><div class="result-field-label">🔑 Credentials (${creds.length})</div><div class="result-field-value highlight" style="font-size:11px;line-height:2">${creds.slice(0,5).map(c=>`${c.url||''} → ${c.username||''} : ${c.password||''}`).join('<br>')}</div></div>`:''}
+        </div></div>`;
+    });
+  }
+
+  else if(mode === 'osint'){
+    const od = data.osint?.data?.data || data.osint?.data || {};
+    const type = data.osint?.type || 'unknown';
+    const typeColors = {discord:'#7289da',steam:'#00adee',email:'#22c55e'};
+    const color = typeColors[type]||'#888';
+    if(!od||!Object.keys(od).length){
+      lst.innerHTML = `<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Profil introuvable pour "${query}"</div></div>`;
+      return;
+    }
+    document.getElementById('results-count').textContent = '1 profil';
+    const ini = (od.username||od.email||od.global_name||query)[0]?.toUpperCase()||'?';
+    cards = [`<div class="result-card">
+      <div class="result-card-header">
+        <div class="result-person"><div class="result-avatar" style="background:linear-gradient(135deg,${color},#333)">${ini}</div>
+          <div><div class="result-name">${od.username||od.global_name||od.email||query}</div>
+            <div style="display:flex;gap:6px;margin-top:4px">${bdg('🕵️ OSINT',color)}${bdg(type.toUpperCase(),color)}</div>
+          </div>
+        </div>
+        <span class="result-status status-active">TROUVÉ</span>
+      </div>
+      <div class="result-grid">
+        ${Object.entries(od).filter(([k,v])=>v&&typeof v!=='object'&&typeof v!=='boolean').map(([k,v])=>f('📌 '+k,String(v),['id','email','username','discriminator','steam_id'].includes(k))).join('')}
+      </div></div>`];
+  }
+
+  if(!cards.length){
+    lst.innerHTML = `<div class="no-results"><div class="no-results-icon">🔎</div><div class="no-results-text">Aucun résultat</div></div>`;
+    return;
+  }
+  lst.innerHTML = cards.join('');
+}
+
+function switchTab(el,id){
+  document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('results-list').innerHTML='';
+}
 
 // =============================================
 function refreshAdminTable(){
