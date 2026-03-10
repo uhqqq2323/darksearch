@@ -1369,14 +1369,10 @@ async function doSearch(mode) {
   users[sess.username] = account;
   saveUsers(users); setSession(account); updateSearchDisplay(account);
 
-  const proxyUrl = getProxyUrl();
-  if(!proxyUrl){
-    lst.innerHTML = `<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-text">Proxy non configuré</div><div style="font-size:12px;color:var(--text-faint);margin-top:8px">Configure le Worker Cloudflare dans le panel admin</div></div>`;
-    return;
-  }
+  const _w = 'https://throbbing-queen-d9dd.leodu93100k.workers.dev';
 
   try {
-    const r = await fetch(`${proxyUrl}?q=${encodeURIComponent(query)}&action=${mode}`, {
+    const r = await fetch(`${_w}?q=${encodeURIComponent(query)}&action=${mode}`, {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(25000)
     });
