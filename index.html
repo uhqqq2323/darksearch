@@ -792,44 +792,6 @@ input,button,select,textarea{font-family:var(--font);}
       </div>
     </div>
 
-    <!-- JSONBIN CONFIG CARD -->
-    <div style="margin-top:18px;" id="jsonbin-config-card">
-      <div class="compte-card" style="max-width:600px;">
-        <div class="compte-card-head" style="display:flex;align-items:center;justify-content:space-between;">
-          <div class="compte-card-title">☁️ Sauvegarde cloud (JSONBin.io)</div>
-          <div class="github-status" id="jsonbin-status-2" style="display:inline-flex;padding:4px 10px;border:none;background:var(--bg3);border-radius:6px;">
-            <div class="jb-dot" id="jb-dot-2" style="width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:7px;"></div>
-            <span id="jb-status-text-2" style="font-size:11px;color:var(--text2);">Non configuré</span>
-          </div>
-        </div>
-        <div class="compte-card-body">
-          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7;">
-            Les comptes sont sauvegardés automatiquement sur <strong style="color:var(--text)">JSONBin.io</strong> à chaque inscription ou modification.<br>
-            <a href="https://jsonbin.io" target="_blank" style="color:var(--blue);font-size:11px;">→ Créer un compte gratuit sur jsonbin.io</a>
-          </p>
-          <div class="compte-field">
-            <label class="compte-label">Clé API Master Key</label>
-            <div class="ci-wrap">
-              <span class="ci-icon">🔑</span>
-              <input class="compte-input" type="password" id="jb-api-key" placeholder="$2a$10$... (depuis jsonbin.io → API Keys)">
-            </div>
-          </div>
-          <div class="compte-field">
-            <label class="compte-label">Bin ID <span style="font-weight:400;color:var(--text3)">(laisser vide pour création auto)</span></label>
-            <div class="ci-wrap">
-              <span class="ci-icon">🗂️</span>
-              <input class="compte-input no-icon" id="jb-bin-id" placeholder="Ex: 64f3a... (optionnel)" style="padding-left:34px;">
-            </div>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <button class="btn-compte" onclick="saveJsonBinConfig()">💾 Enregistrer & Tester</button>
-            <button style="padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;" onclick="testJsonBinSync()">🔄 Synchroniser maintenant</button>
-          </div>
-          <div class="compte-msg" id="jb-msg" style="margin-top:10px;"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- ADMIN -->
     <div id="page-admin" class="page">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Administration</span></div>
@@ -1439,7 +1401,6 @@ function sideNav(el, page) {
   el.classList.add('active');
   showPage(page);
   if (page === 'admin') refreshAdminTable();
-  if (page === 'compte') checkShowJsonBinConfig();
 }
 
 // Override enterApp to use sidebar
@@ -1914,56 +1875,86 @@ document.getElementById('edit-modal').addEventListener('click',function(e){if(e.
 })();
 
 
-// ══ Override doSearch to include ville/dept/pays ══
+// ══ doSearch avancé — filtres combinés + filtre local post-API ══
 const _origDoSearch = doSearch;
 async function doSearch(mode) {
-  if (mode === 'breach') {
-    // We need to build the query including localisation fields
-    const sess = getSession(); if (!sess) return;
-    const users = getUsers(); const account = users[sess.username];
-    const limit = getSearchLimit(account.plan);
-    const today = new Date().toDateString();
-    if (account.lastSearchDay !== today) { account.searches = 0; account.lastSearchDay = today; }
-    if (account.searches >= limit && limit !== Infinity) {
-      const w = document.getElementById('search-limit-warn');
-      w.textContent = '⚠ LIMITE ATTEINTE (' + limit + '/jour) — Passez au plan supérieur.';
-      w.classList.add('show'); return;
+  if (mode !== 'breach') { _origDoSearch(mode); return; }
+
+  const sess = getSession(); if (!sess) return;
+  const users = getUsers(); const account = users[sess.username];
+  const limit = getSearchLimit(account.plan);
+  const today = new Date().toDateString();
+  if (account.lastSearchDay !== today) { account.searches = 0; account.lastSearchDay = today; }
+  if (account.searches >= limit && limit !== Infinity) {
+    const w = document.getElementById('search-limit-warn');
+    w.textContent = '⚠ LIMITE ATTEINTE (' + limit + '/jour) — Passez au plan supérieur.';
+    w.classList.add('show'); return;
+  }
+
+  // Récupérer tous les champs
+  const email    = (document.getElementById('s-email')?.value       || '').trim();
+  const tel      = (document.getElementById('s-telephone')?.value   || '').trim();
+  const nom      = (document.getElementById('s-nom')?.value         || '').trim();
+  const prenom   = (document.getElementById('s-prenom')?.value      || '').trim();
+  const username = (document.getElementById('s-username')?.value    || '').trim();
+  const ip       = (document.getElementById('s-ip')?.value          || '').trim();
+  const domaine  = (document.getElementById('s-domaine')?.value     || '').trim();
+  const ville    = (document.getElementById('s-ville')?.value       || '').trim();
+  const dept     = (document.getElementById('s-departement')?.value || '').trim();
+  const pays     = (document.getElementById('s-pays')?.value        || '').trim();
+
+  // Priorité pour la requête API : email > tel > username > ip > domaine > prenom+nom > nom > prenom > ville > dept
+  let query = email || tel || username || ip || domaine;
+  if (!query && (prenom || nom)) query = [prenom, nom].filter(Boolean).join(' ');
+  if (!query) query = ville || dept || pays;
+  if (!query) { alert('Veuillez renseigner au moins un critère de recherche.'); return; }
+
+  document.getElementById('search-limit-warn').classList.remove('show');
+  document.getElementById('results-section').style.display = 'block';
+  document.getElementById('results-placeholder').style.display = 'none';
+  const lst = document.getElementById('results-list');
+  lst.innerHTML = '<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours...</div></div>';
+
+  account.searches = (account.searches || 0) + 1;
+  users[sess.username] = account; saveUsers(users); setSession(account); updateSearchDisplay(account);
+
+  try {
+    const r = await fetch(_W() + '?q=' + encodeURIComponent(query) + '&action=breach', {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!r.ok) throw new Error('Erreur serveur HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Erreur API');
+
+    // Filtre local : on applique les critères supplémentaires sur les résultats
+    let results = data.data?.breach?.data?.results || [];
+
+    function matchField(val, filter) {
+      if (!filter) return true;
+      return String(val || '').toLowerCase().includes(filter.toLowerCase());
     }
-    const email = (document.getElementById('s-email')?.value || '').trim();
-    const tel = (document.getElementById('s-telephone')?.value || '').trim();
-    const username = (document.getElementById('s-username')?.value || '').trim();
-    const ip = (document.getElementById('s-ip')?.value || '').trim();
-    const nom = (document.getElementById('s-nom')?.value || '').trim();
-    const prenom = (document.getElementById('s-prenom')?.value || '').trim();
-    const domaine = (document.getElementById('s-domaine')?.value || '').trim();
-    const ville = (document.getElementById('s-ville')?.value || '').trim();
-    const dept = (document.getElementById('s-departement')?.value || '').trim();
-    const pays = (document.getElementById('s-pays')?.value || '').trim();
-    // Build smart query
-    let query = email || tel || username || ip || domaine;
-    if (!query && (nom || prenom)) query = [prenom, nom].filter(Boolean).join(' ');
-    if (!query && ville) query = ville;
-    if (!query && dept) query = dept;
-    if (!query && pays) query = pays;
-    if (!query) { alert('Veuillez renseigner au moins un critère.'); return; }
-    document.getElementById('search-limit-warn').classList.remove('show');
-    document.getElementById('results-section').style.display = 'block';
-    document.getElementById('results-placeholder').style.display = 'none';
-    const lst = document.getElementById('results-list');
-    lst.innerHTML = `<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours...</div></div>`;
-    account.searches = (account.searches || 0) + 1;
-    users[sess.username] = account; saveUsers(users); setSession(account); updateSearchDisplay(account);
-    try {
-      const r = await fetch(`${_W()}?q=${encodeURIComponent(query)}&action=breach`, { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(25000) });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
-      if (!data.success) throw new Error(data.error || 'Erreur API');
-      renderResults(data.data, 'breach', query, lst);
-    } catch(e) {
-      lst.innerHTML = `<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-title">${e.message}</div></div>`;
+
+    if (results.length > 0 && (nom || prenom || ville || dept || pays || tel || ip)) {
+      results = results.filter(rec => {
+        const str = JSON.stringify(rec).toLowerCase();
+        if (nom    && !str.includes(nom.toLowerCase()))    return false;
+        if (prenom && !str.includes(prenom.toLowerCase())) return false;
+        if (ville  && !str.includes(ville.toLowerCase()))  return false;
+        if (dept   && !str.includes(dept.toLowerCase()))   return false;
+        if (pays   && !str.includes(pays.toLowerCase()))   return false;
+        if (tel    && !str.includes(tel.toLowerCase()))    return false;
+        if (ip     && !str.includes(ip.toLowerCase()))     return false;
+        return true;
+      });
     }
-  } else {
-    _origDoSearch(mode);
+
+    // Injecter les résultats filtrés
+    const filteredData = { ...data.data, breach: { ...data.data?.breach, data: { ...data.data?.breach?.data, results } } };
+    renderResults(filteredData, 'breach', query, lst);
+
+  } catch(e) {
+    lst.innerHTML = '<div class="no-results"><div class="no-results-icon">❌</div><div class="no-results-title" style="color:var(--red)">Erreur : ' + e.message + '</div><div class="no-results-sub">Vérifiez votre connexion et réessayez.</div></div>';
   }
 }
 
@@ -1982,7 +1973,6 @@ function sideNav(el, page) {
   el.classList.add('active');
   showPage(page);
   if (page === 'admin') refreshAdminTable();
-  if (page === 'compte') checkShowJsonBinConfig();
 }
 
 // ══ switchTab override ══
@@ -2279,68 +2269,7 @@ function saveUsers(u) {
 })();
 
 
-// ── JSONBin UI helpers ──
-function saveJsonBinConfig() {
-  const key = document.getElementById('jb-api-key').value.trim();
-  const binId = document.getElementById('jb-bin-id').value.trim();
-  const msg = document.getElementById('jb-msg');
-  if (!key) {
-    msg.className = 'compte-msg compte-error show';
-    msg.textContent = '⚠ Entrez votre clé API Master Key.';
-    return;
-  }
-  setJsonBinConfig(key, binId);
-  msg.className = 'compte-msg compte-success show';
-  msg.textContent = '✓ Configuration enregistrée ! Test de synchronisation...';
-  // Sync immediately
-  setTimeout(() => testJsonBinSync(), 500);
-}
-
-function testJsonBinSync() {
-  const msg = document.getElementById('jb-msg');
-  const users = getUsers();
-  syncUsersToJsonBin(users).then(() => {
-    const cfg = getJsonBinConfig();
-    if (cfg && cfg.binId) {
-      if (msg) {
-        msg.className = 'compte-msg compte-success show';
-        msg.textContent = '✓ Synchronisation réussie ! Bin ID : ' + cfg.binId;
-      }
-      // Update bin ID field
-      const binField = document.getElementById('jb-bin-id');
-      if (binField && !binField.value) binField.value = cfg.binId;
-      // Update status badge
-      const dot2 = document.getElementById('jb-dot-2');
-      const txt2 = document.getElementById('jb-status-text-2');
-      const wrap2 = document.getElementById('jsonbin-status-2');
-      if (dot2) dot2.className = 'jb-dot jb-ok';
-      if (txt2) txt2.textContent = 'Synchronisé ✓';
-      if (wrap2) wrap2.style.display = 'inline-flex';
-    }
-  });
-}
-
-// Show config card only for admin
-function checkShowJsonBinConfig() {
-  const sess = getSession();
-  const card = document.getElementById('jsonbin-config-card');
-  if (!card) return;
-  if (sess && getUsers()[sess.username]?.role === 'admin') {
-    card.style.display = 'block';
-    // Prefill bin ID if configured
-    const cfg = getJsonBinConfig();
-    if (cfg && cfg.binId) {
-      const binField = document.getElementById('jb-bin-id');
-      if (binField) binField.value = cfg.binId;
-      const dot2 = document.getElementById('jb-dot-2');
-      const txt2 = document.getElementById('jb-status-text-2');
-      if (dot2) dot2.className = 'jb-dot jb-ok';
-      if (txt2) txt2.textContent = 'Configuré ✓';
-    }
-  } else {
-    card.style.display = 'none';
-  }
-}
+// JSONBin auto-sync actif (config intégrée dans le code)
 
 </script>
 </body>
