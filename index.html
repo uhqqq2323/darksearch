@@ -1491,3 +1491,33 @@ function snakePlay(){if(snakeGame)snakeGame.play();}
 function snakePause(){if(snakeGame)snakeGame.pause();}
 
 // ── Curseur custom ──
+
+// ── Anti-devtools ──
+(function(){
+  function show(){const w=document.getElementById('devtools-warning');if(w)w.classList.add('show');}
+  function hide(){const w=document.getElementById('devtools-warning');if(w)w.classList.remove('show');}
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  document.addEventListener('keydown',e=>{
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))){e.preventDefault();show();return false;}
+    if(e.ctrlKey&&e.key.toUpperCase()==='U'){e.preventDefault();return false;}
+  });
+  setInterval(()=>{(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160)?show():hide();},2000);
+})();
+
+// ── Modals ──
+document.getElementById('plan-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
+// ── Enter key ──
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+
+// ── Auto-login ──
+(function(){
+  const sess=getSession();
+  if(sess){
+    const users=getUsers();
+    const account=users[sess.username];
+    if(account&&account.status!=='banni')enterApp(account);
+  }
+})();
