@@ -227,28 +227,6 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .snake-btn-pause{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
 .snake-btn-pause:hover{border-color:var(--amber);color:var(--amber);}
 
-/* ══ CHAT WIDGET ══ */
-.chat-widget{background:linear-gradient(135deg,rgba(16,212,116,.06),var(--bg2));border:1px solid rgba(16,212,116,.2);border-radius:var(--r2);padding:14px;display:flex;flex-direction:column;height:320px;gap:10px;}
-.chat-widget-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(16,212,116,.1);}
-.chat-widget-title{font-size:13px;font-weight:700;color:var(--green);}
-.chat-widget-status{display:flex;align-items:center;gap:5px;}
-.chat-status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(16,212,116,.5);animation:pulse 2s infinite;}
-.chat-widget-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0;margin-bottom:4px;}
-.chat-widget-messages::-webkit-scrollbar{width:4px;}
-.chat-widget-messages::-webkit-scrollbar-track{background:transparent;}
-.chat-widget-messages::-webkit-scrollbar-thumb{background:rgba(16,212,116,.3);border-radius:2px;}
-.chat-msg{padding:8px 10px;background:rgba(15,20,32,.5);border-radius:6px;border-left:2px solid var(--green);font-size:11px;line-height:1.4;}
-.chat-msg.own{background:rgba(16,212,116,.08);border-left-color:var(--green);margin-left:20px;}
-.chat-msg-user{font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
-.chat-msg-text{color:var(--text);word-break:break-word;}
-.chat-widget-input{display:flex;gap:6px;align-items:center;}
-.chat-widget-field{flex:1;background:rgba(15,20,32,.6);border:1px solid rgba(16,212,116,.2);border-radius:6px;padding:8px 10px;color:var(--text);font-size:11px;outline:none;transition:border-color .2s;font-family:var(--mono);}
-.chat-widget-field:focus{border-color:rgba(16,212,116,.5);}
-.chat-widget-field::placeholder{color:var(--text3);}
-.chat-widget-btn{width:32px;height:32px;background:rgba(16,212,116,.15);border:1px solid rgba(16,212,116,.3);border-radius:6px;color:var(--green);cursor:pointer;font-size:14px;transition:all .2s;display:flex;align-items:center;justify-content:center;}
-.chat-widget-btn:hover:not(:disabled){background:rgba(16,212,116,.25);}
-.chat-widget-btn:disabled{opacity:.5;cursor:not-allowed;}
-
 /* ══ RECHERCHE ══ */
 .search-hero{text-align:center;padding:4px 0 28px;}
 .search-hero-icon{width:60px;height:60px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
@@ -633,23 +611,6 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
           <div class="snake-controls">
             <button class="snake-btn snake-btn-play" onclick="snakePlay()">▶ Jouer</button>
             <button class="snake-btn snake-btn-pause" onclick="snakePause()">⏸ Pause</button>
-          </div>
-        </div>
-        <!-- CHAT WIDGET -->
-        <div class="chat-widget">
-          <div class="chat-widget-header">
-            <div class="chat-widget-title">💬 Live Chat</div>
-            <div class="chat-widget-status">
-              <div class="chat-status-dot" id="chat-status-dot"></div>
-              <span id="chat-status-text" style="font-size:10px;color:var(--text2);">Chargement...</span>
-            </div>
-          </div>
-          <div class="chat-widget-messages" id="chat-widget-messages">
-            <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:12px;">Connexion Firebase...</div>
-          </div>
-          <div class="chat-widget-input">
-            <input type="text" class="chat-widget-field" id="chat-widget-input" placeholder="Message..." disabled>
-            <button class="chat-widget-btn" id="chat-widget-send" disabled>→</button>
           </div>
         </div>
       </div>
@@ -1533,168 +1494,33 @@ document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='
 
 
 window.addEventListener('load', function(){
-  function loadScript(src, cb, onError){
+  function loadScript(src, cb){
     const s=document.createElement('script');
     s.src=src;
-    s.timeout=8000;
     s.onload=cb;
-    s.onerror=function(){ 
-      console.warn('[Firebase] ❌ Impossible de charger '+src); 
-      if(onError)onError();
-    };
-    const timer=setTimeout(()=>{
-      console.warn('[Firebase] ⏱️ Timeout - charger depuis '+src);
-      if(onError)onError();
-    }, 8000);
-    s.onload=function(){clearTimeout(timer);cb();};
+    s.onerror=function(){ console.warn('[Firebase] Impossible de charger '+src); };
     document.head.appendChild(s);
   }
-  
-  function initFirebase(){
-    try{
-      if(typeof firebase==='undefined'){throw new Error('Firebase non chargé');}
-      if(!firebase.apps.length){
-        firebase.initializeApp({
-          apiKey:"AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
-          authDomain:"darksearcher-33468.firebaseapp.com",
-          projectId:"darksearcher-33468",
-          storageBucket:"darksearcher-33468.firebasestorage.app",
-          messagingSenderId:"717210037208",
-          appId:"1:717210037208:web:5b706dc3a03f7994b360ad"
-        });
-      }
-      window._db=firebase.firestore();
-      window._fbReady=true;
-      console.log('[DarkSearcher] ✅ Firebase prêt');
-    }catch(e){ 
-      console.warn('[Firebase] ⚠️ Erreur init:',e.message);
-      window._fbReady=false;
-      useLocalStorage(); 
-    }
-  }
-  
-  function useLocalStorage(){
-    console.log('[DarkSearcher] 📦 Mode hors ligne - utilisation localStorage');
-    window._fbReady=false;
-  }
-  
-  
   loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function(){
-    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', 
-      initFirebase, 
-      useLocalStorage
-    );
-  }, useLocalStorage);
-  
-  
-  let retries = 0;
-  const tryInitChat = () => {
-    if(typeof firebase !== 'undefined' && firebase.apps.length) {
-      initChatWidget();
-    } else if(retries < 10) {
-      retries++;
-      setTimeout(tryInitChat, 500);
-    }
-  };
-  setTimeout(tryInitChat, 2000);
+    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', function(){
+      try{
+        if(!firebase.apps.length){
+          firebase.initializeApp({
+            apiKey:"AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
+            authDomain:"darksearcher-33468.firebaseapp.com",
+            projectId:"darksearcher-33468",
+            storageBucket:"darksearcher-33468.firebasestorage.app",
+            messagingSenderId:"717210037208",
+            appId:"1:717210037208:web:5b706dc3a03f7994b360ad"
+          });
+        }
+        window._db=firebase.firestore();
+        window._fbReady=true;
+        console.log('[DarkSearcher] Firebase prêt ✅');
+      }catch(e){ console.warn('[Firebase] Erreur init:',e); }
+    });
+  });
 });
 
-function initChatWidget() {
-  const messagesDiv = document.getElementById('chat-widget-messages');
-  const inputField = document.getElementById('chat-widget-input');
-  const sendBtn = document.getElementById('chat-widget-send');
-  const statusDot = document.getElementById('chat-status-dot');
-  const statusText = document.getElementById('chat-status-text');
-  
-  if(!messagesDiv || !inputField || !sendBtn) {
-    console.warn('Chat widget elements not found');
-    return;
-  }
-  
-  if(typeof firebase === 'undefined' || !firebase.apps.length) {
-    console.warn('Firebase not initialized');
-    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Firebase non disponible</div>';
-    return;
-  }
-  
-  try {
-    const db = firebase.firestore();
-    let userId = localStorage.getItem('darksearch_user_id') || 'widget_' + Date.now();
-    let userName = 'User ' + userId.slice(0, 6).toUpperCase();
-    let lastSendTime = 0;
-    const SEND_DELAY = 2000;
-    
-    statusDot.style.background = 'var(--green)';
-    statusText.textContent = 'En ligne';
-    inputField.disabled = false;
-    sendBtn.disabled = false;
-    
-    db.collection('chat_messages')
-      .orderBy('timestamp', 'desc')
-      .limit(20)
-      .onSnapshot((snapshot) => {
-        let msgs = [];
-        snapshot.forEach(doc => msgs.unshift(doc.data()));
-        
-        messagesDiv.innerHTML = msgs.length ? msgs.map(msg => {
-          const isOwn = msg.userId === userId;
-          return `<div class="chat-msg ${isOwn ? 'own' : ''}">
-            <div class="chat-msg-user">${msg.userName}</div>
-            <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
-          </div>`;
-        }).join('') : '<div style="padding:10px;color:var(--text3);font-size:11px;text-align:center;">Aucun message</div>';
-        
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }, (error) => {
-        console.error('Chat error:', error);
-        statusDot.style.background = 'var(--error)';
-        statusText.textContent = 'Erreur';
-        messagesDiv.innerHTML = '<div style="padding:10px;color:var(--error);font-size:11px;">Erreur Firestore</div>';
-      });
-    
-    function sendMsg() {
-      const text = inputField.value.trim();
-      if(!text) return;
-      
-      const now = Date.now();
-      if(now - lastSendTime < SEND_DELAY) return;
-      
-      db.collection('chat_messages').add({
-        text: text,
-        userId: userId,
-        userName: userName,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(err => {
-        console.error('Send error:', err);
-        statusText.textContent = 'Erreur envoi';
-      });
-      
-      inputField.value = '';
-      lastSendTime = now;
-      
-      sendBtn.disabled = true;
-      let t = 2;
-      const iv = setInterval(() => {
-        t--;
-        if(t <= 0) { clearInterval(iv); sendBtn.disabled = false; }
-      }, 1000);
-    }
-    
-    sendBtn.addEventListener('click', sendMsg);
-    inputField.addEventListener('keydown', e => {
-      if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
-    });
-    
-  } catch(error) {
-    console.error('Chat init error:', error);
-    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Erreur: ' + error.message + '</div>';
-    statusDot.style.background = 'var(--error)';
-    statusText.textContent = 'Erreur init';
-  }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
 </script>
