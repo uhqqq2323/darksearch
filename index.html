@@ -1492,34 +1492,58 @@ document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='
   }
 })();
 
-// ── Firebase — chargé APRÈS le JS principal ──
+// ── Firebase — chargé APRÈS le JS principal avec FALLBACK ──
 window.addEventListener('load', function(){
-  function loadScript(src, cb){
+  function loadScript(src, cb, onError){
     const s=document.createElement('script');
     s.src=src;
+    s.timeout=8000;
     s.onload=cb;
-    s.onerror=function(){ console.warn('[Firebase] Impossible de charger '+src); };
+    s.onerror=function(){ 
+      console.warn('[Firebase] ❌ Impossible de charger '+src); 
+      if(onError)onError();
+    };
+    const timer=setTimeout(()=>{
+      console.warn('[Firebase] ⏱️ Timeout - charger depuis '+src);
+      if(onError)onError();
+    }, 8000);
+    s.onload=function(){clearTimeout(timer);cb();};
     document.head.appendChild(s);
   }
+  
+  function initFirebase(){
+    try{
+      if(typeof firebase==='undefined'){throw new Error('Firebase non chargé');}
+      if(!firebase.apps.length){
+        firebase.initializeApp({
+          apiKey:"AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
+          authDomain:"darksearcher-33468.firebaseapp.com",
+          projectId:"darksearcher-33468",
+          storageBucket:"darksearcher-33468.firebasestorage.app",
+          messagingSenderId:"717210037208",
+          appId:"1:717210037208:web:5b706dc3a03f7994b360ad"
+        });
+      }
+      window._db=firebase.firestore();
+      window._fbReady=true;
+      console.log('[DarkSearcher] ✅ Firebase prêt');
+    }catch(e){ 
+      console.warn('[Firebase] ⚠️ Erreur init:',e.message);
+      window._fbReady=false;
+      useLocalStorage(); 
+    }
+  }
+  
+  function useLocalStorage(){
+    console.log('[DarkSearcher] 📦 Mode hors ligne - utilisation localStorage');
+    window._fbReady=false;
+  }
+  
+  // Charger Firebase avec timeout
   loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function(){
-    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', function(){
-      try{
-        if(!firebase.apps.length){
-          firebase.initializeApp({
-            apiKey:"AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
-            authDomain:"darksearcher-33468.firebaseapp.com",
-            projectId:"darksearcher-33468",
-            storageBucket:"darksearcher-33468.firebasestorage.app",
-            messagingSenderId:"717210037208",
-            appId:"1:717210037208:web:5b706dc3a03f7994b360ad"
-          });
-        }
-        window._db=firebase.firestore();
-        window._fbReady=true;
-        console.log('[DarkSearcher] Firebase prêt ✅');
-      }catch(e){ console.warn('[Firebase] Erreur init:',e); }
-    });
-  });
+    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', 
+      initFirebase, 
+      useLocalStorage
+    );
+  }, useLocalStorage);
 });
-
-
