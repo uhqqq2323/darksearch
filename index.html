@@ -860,21 +860,21 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
-//  DarkSearcher JS Core — Version finale clean
-// ═══════════════════════════════════════════════════
 
-// ── Clés encodées ──
+
+
+
+
 function _dp(){return[110,88,65,14,25,73,95,88,25,11,24,26,24,30].map(c=>String.fromCharCode(c^42)).join('');}
 function _dw(){return[33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100,56,60,44,44,39,100,45,112,45,45,103,37,44,38,45,60,112,122,120,121,121,34,103,62,38,59,34,44,59,58,103,45,44,63].map(c=>String.fromCharCode(c^73)).join('');}
 const _JB=[3,5,85,80,83,3,84,83,84,6,80,6,87,84,3,4,6,84,82,8,9,2,80,9,80,87,4,5,82,84,87,82,1,9,83,0,87,2,1,85,87,0,1,80,4,85,83,80,85,84,5,7,80,80,7,80,82,8,5,5,6,82,84,82];
 function _jbKey(){return _JB.map(c=>String.fromCharCode(c^49)).join('');}
 
-// ── Storage ──
+
 function getUsers(){
   let stored={};
   try{const r=localStorage.getItem('ds_users');if(r)stored=JSON.parse(r);}catch(e){}
-  // Admin toujours reconstruit depuis le code
+  
   stored['admin']={
     username:'admin',
     password:_dp(),
@@ -890,7 +890,7 @@ function getUsers(){
 }
 
 function saveUsers(users){
-  // Toujours sauvegarder en local d'abord (rapide)
+  
   try{
     const s={};
     for(const[k,u]of Object.entries(users)){
@@ -899,7 +899,7 @@ function saveUsers(users){
     }
     localStorage.setItem('ds_users',JSON.stringify(s));
   }catch(e){}
-  // Sync Firestore (sans mot de passe)
+  
   if(window._fbReady&&window._db){
     for(const[k,u]of Object.entries(users)){
       if(k==='admin')continue;
@@ -913,7 +913,7 @@ function getSession(){try{return JSON.parse(localStorage.getItem('ds_session')||
 function setSession(a){try{localStorage.setItem('ds_session',JSON.stringify({username:a.username}));}catch(e){}}
 function clearSession(){try{localStorage.removeItem('ds_session');}catch(e){}}
 
-// ── JSONBin sync ──
+
 async function syncJB(users){
   const key=_jbKey();if(!key)return;
   const safe={};
@@ -929,7 +929,7 @@ async function syncJB(users){
   }
 }
 
-// ── Auth ──
+
 let loginAttempts=0,loginBlocked=false,blockTimer=null;
 
 function showLoginError(msg){
@@ -1022,7 +1022,7 @@ function checkPassStrength(){
   fill.style.background=s?['#ff4757','#ffa502','#3b82f6','#10d474'][s-1]:'transparent';
 }
 
-// ── Compte ──
+
 function updateComptePage(a){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('compte-username',a.username);
@@ -1053,7 +1053,7 @@ function changePassword(){
   document.getElementById('pass-confirm').value='';
 }
 
-// ── App ──
+
 function getSearchLimit(plan){return plan==='free'?10:plan==='starter'?100:Infinity;}
 
 function updateSearchDisplay(a){
@@ -1067,7 +1067,7 @@ function enterApp(account){
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display='block';
-  // Sync depuis Firestore — Firestore écrase le local (source de vérité)
+  
   if(window._fbReady&&window._db&&account.username!=='admin'){
     window._db.collection('users').doc(account.username).get().then(snap=>{
       if(snap.exists()){
@@ -1078,7 +1078,7 @@ function enterApp(account){
         const toSave={};
         for(const[k,u]of Object.entries(users)){toSave[k]={...u};if(k==='admin')delete toSave[k].password;}
         localStorage.setItem('ds_users',JSON.stringify(toSave));
-        // Mettre à jour l'affichage si le plan a changé
+        
         updateSearchDisplay(updated);
         updateComptePage(updated);
         const pb=document.getElementById('sb-plan-badge');
@@ -1111,7 +1111,7 @@ function enterApp(account){
   if(dp)dp.value=new Date().toISOString().split('T')[0];
 }
 
-// ── Navigation ──
+
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const p=document.getElementById('page-'+id);if(p)p.classList.add('active');
@@ -1124,7 +1124,7 @@ function sideNav(el,page){
   showPage(page);
   if(page==='admin'){
     refreshAdminTable();
-    // Listener temps réel Firestore
+    
     if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
     if(window._fbReady&&window._db){
       _fbUnsub=window._db.collection('users').onSnapshot(snap=>{
@@ -1133,7 +1133,7 @@ function sideNav(el,page){
         _mergeAndRenderAdmin(fbUsers);
       });
     } else {
-      // Retry quand Firebase prêt
+      
       const retry=setInterval(()=>{
         if(window._fbReady&&window._db){
           clearInterval(retry);
@@ -1161,16 +1161,16 @@ function sideNav(el,page){
 function _mergeAndRenderAdmin(fbUsers){
   const local=getUsers();
   const merged={...local};
-  // Firestore = source de vérité pour plan/status
+  
   for(const[k,u]of Object.entries(fbUsers)){
     if(k==='admin')continue;
     merged[k]={
       ...(local[k]||{}),
       ...u,
-      password:local[k]?.password||'' // garder le password local
+      password:local[k]?.password||'' 
     };
   }
-  // Réécrire le localStorage avec les données Firestore
+  
   try{
     const toSave={};
     for(const[k,u]of Object.entries(merged)){
@@ -1200,7 +1200,7 @@ function switchTab(el,id){
   document.getElementById('results-list').innerHTML='';
 }
 
-// ── Recherche ──
+
 async function doSearch(mode){
   const sess=getSession();if(!sess)return;
   const users=getUsers();const account=users[sess.username];if(!account)return;
@@ -1241,7 +1241,7 @@ async function doSearch(mode){
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
     if(!data.success)throw new Error(data.error||'Erreur API');
-    // Filtre local
+    
     if(mode==='breach'){
       let results=data.data?.breach?.data?.results||[];
       if(results.length>0){
@@ -1292,7 +1292,7 @@ function renderResults(data,mode,query,lst){
   }
 }
 
-// ── Admin ──
+
 function refreshAdminTable(){
   const users=getUsers();
   const all=Object.values(users);
@@ -1335,13 +1335,13 @@ function saveEditUser(){
   const username=document.getElementById('edit-username-key').value;
   const plan=document.getElementById('edit-plan').value;
   const status=document.getElementById('edit-status').value;
-  // 1. Mettre à jour localStorage
+  
   const users=getUsers();
   if(!users[username])return;
   users[username].plan=plan;
   users[username].status=status;
   saveUsers(users);
-  // 2. Mettre à jour Firestore (source de vérité)
+  
   if(window._fbReady&&window._db){
     window._db.collection('users').doc(username).set(
       {plan, status},
@@ -1357,13 +1357,13 @@ function deleteUser(username){
   if(username==='admin'){alert('Impossible de supprimer admin.');return;}
   if(!confirm('Supprimer '+username+' ?'))return;
   const users=getUsers();delete users[username];saveUsers(users);
-  // Supprimer aussi de Firestore
+  
   if(window._fbReady&&window._db)
     window._db.collection('users').doc(username).delete().catch(()=>{});
   refreshAdminTable();
 }
 
-// ── Pricing ──
+
 let isAnnual=false;
 function toggleBill(){
   isAnnual=!isAnnual;
@@ -1379,7 +1379,7 @@ function toggleBill(){
 function openModal(plan){document.getElementById('modal-plan-name').textContent=plan;document.getElementById('plan-modal').classList.add('show');}
 function toggleFaq(item){const o=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!o)item.classList.add('open');}
 
-// ── Clock ──
+
 function startClock(){
   const tick=()=>{
     const t=new Date().toLocaleTimeString('fr-FR');
@@ -1399,7 +1399,7 @@ function animCount(el,target){
   },16);
 }
 
-// ── Notifications ──
+
 function getNotifications(){try{return JSON.parse(localStorage.getItem('ds_notifs')||'[]');}catch(e){return[];}}
 function saveNotifications(n){try{localStorage.setItem('ds_notifs',JSON.stringify(n));}catch(e){}}
 
@@ -1448,7 +1448,7 @@ document.addEventListener('click',e=>{
   if(p&&p.classList.contains('show')&&!p.contains(e.target)&&!e.target.closest('.tb-btn'))p.classList.remove('show');
 });
 
-// ── Snake ──
+
 let snakeGame=null;
 function initSnake(){
   const canvas=document.getElementById('snake-canvas');if(!canvas)return;
@@ -1459,7 +1459,7 @@ function initSnake(){
   function spawn(){return{x:Math.floor(Math.random()*(W/cell)),y:Math.floor(Math.random()*(H/cell))};}
   function draw(){
     ctx.fillStyle='#080a0e';ctx.fillRect(0,0,W,H);
-    // Grid subtle
+    
     ctx.strokeStyle='rgba(255,255,255,0.02)';ctx.lineWidth=0.5;
     for(let x=0;x<W;x+=cell){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
     for(let y=0;y<H;y+=cell){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
@@ -1491,8 +1491,9 @@ function initSnake(){
   };
   draw();
   document.addEventListener('keydown',e=>{
+    const key = e.key.toLowerCase();
     const m={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
-    const nd=m[e.key];if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;e.preventDefault();}
+    const nd=m[key];if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;e.preventDefault();}
   });
 }
 function snakePlay(){if(snakeGame)snakeGame.play();}
@@ -1577,7 +1578,7 @@ window.addEventListener('load', function(){
     window._fbReady=false;
   }
   
-
+  
   loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function(){
     loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', 
       initFirebase, 
@@ -1585,7 +1586,7 @@ window.addEventListener('load', function(){
     );
   }, useLocalStorage);
   
-  // ── CHAT WIDGET ──
+  
   setTimeout(() => {
     if(typeof firebase !== 'undefined' && firebase.apps.length) {
       initChatWidget();
@@ -1608,13 +1609,18 @@ function initChatWidget() {
   
   if(!messagesDiv) return;
   
- 
+  
   statusDot.style.background = 'var(--green)';
   statusText.textContent = 'En ligne';
   inputField.disabled = false;
   sendBtn.disabled = false;
   
- 
+  
+  if(!db || !messagesDiv) {
+    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Chat indisponible</div>';
+    return;
+  }
+  
   db.collection('chat_messages')
     .orderBy('timestamp', 'desc')
     .limit(20)
@@ -1631,9 +1637,12 @@ function initChatWidget() {
       }).join('');
       
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }, (error) => {
+      console.warn('Chat widget error:', error);
+      messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Erreur de connexion</div>';
     });
   
- 
+  
   function sendMsg() {
     const text = inputField.value.trim();
     if(!text) return;
