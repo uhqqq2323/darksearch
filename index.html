@@ -1587,92 +1587,110 @@ window.addEventListener('load', function(){
   }, useLocalStorage);
   
   
-  setTimeout(() => {
+  let retries = 0;
+  const tryInitChat = () => {
     if(typeof firebase !== 'undefined' && firebase.apps.length) {
       initChatWidget();
+    } else if(retries < 10) {
+      retries++;
+      setTimeout(tryInitChat, 500);
     }
-  }, 1000);
+  };
+  setTimeout(tryInitChat, 2000);
 });
 
 function initChatWidget() {
-  const db = firebase.firestore();
-  let userId = localStorage.getItem('darksearch_user_id') || 'widget_' + Date.now();
-  let userName = 'User ' + userId.slice(0, 6).toUpperCase();
-  let lastSendTime = 0;
-  const SEND_DELAY = 2000;
-  
   const messagesDiv = document.getElementById('chat-widget-messages');
   const inputField = document.getElementById('chat-widget-input');
   const sendBtn = document.getElementById('chat-widget-send');
   const statusDot = document.getElementById('chat-status-dot');
   const statusText = document.getElementById('chat-status-text');
   
-  if(!messagesDiv) return;
-  
-  
-  statusDot.style.background = 'var(--green)';
-  statusText.textContent = 'En ligne';
-  inputField.disabled = false;
-  sendBtn.disabled = false;
-  
-  
-  if(!db || !messagesDiv) {
-    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Chat indisponible</div>';
+  if(!messagesDiv || !inputField || !sendBtn) {
+    console.warn('Chat widget elements not found');
     return;
   }
   
-  db.collection('chat_messages')
-    .orderBy('timestamp', 'desc')
-    .limit(20)
-    .onSnapshot((snapshot) => {
-      let msgs = [];
-      snapshot.forEach(doc => msgs.unshift(doc.data()));
-      
-      messagesDiv.innerHTML = msgs.map(msg => {
-        const isOwn = msg.userId === userId;
-        return `<div class="chat-msg ${isOwn ? 'own' : ''}">
-          <div class="chat-msg-user">${msg.userName}</div>
-          <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
-        </div>`;
-      }).join('');
-      
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }, (error) => {
-      console.warn('Chat widget error:', error);
-      messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Erreur de connexion</div>';
-    });
-  
-  
-  function sendMsg() {
-    const text = inputField.value.trim();
-    if(!text) return;
-    
-    const now = Date.now();
-    if(now - lastSendTime < SEND_DELAY) return;
-    
-    db.collection('chat_messages').add({
-      text: text,
-      userId: userId,
-      userName: userName,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    inputField.value = '';
-    lastSendTime = now;
-    
-    sendBtn.disabled = true;
-    let t = 2;
-    const iv = setInterval(() => {
-      t--;
-      if(t <= 0) { clearInterval(iv); sendBtn.disabled = false; }
-    }, 1000);
+  if(typeof firebase === 'undefined' || !firebase.apps.length) {
+    console.warn('Firebase not initialized');
+    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Firebase non disponible</div>';
+    return;
   }
   
-  sendBtn.addEventListener('click', sendMsg);
-  inputField.addEventListener('keydown', e => {
-    if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
-  });
-}
+  try {
+    const db = firebase.firestore();
+    let userId = localStorage.getItem('darksearch_user_id') || 'widget_' + Date.now();
+    let userName = 'User ' + userId.slice(0, 6).toUpperCase();
+    let lastSendTime = 0;
+    const SEND_DELAY = 2000;
+    
+    statusDot.style.background = 'var(--green)';
+    statusText.textContent = 'En ligne';
+    inputField.disabled = false;
+    sendBtn.disabled = false;
+    
+    db.collection('chat_messages')
+      .orderBy('timestamp', 'desc')
+      .limit(20)
+      .onSnapshot((snapshot) => {
+        let msgs = [];
+        snapshot.forEach(doc => msgs.unshift(doc.data()));
+        
+        messagesDiv.innerHTML = msgs.length ? msgs.map(msg => {
+          const isOwn = msg.userId === userId;
+          return `<div class="chat-msg ${isOwn ? 'own' : ''}">
+            <div class="chat-msg-user">${msg.userName}</div>
+            <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
+          </div>`;
+        }).join('') : '<div style="padding:10px;color:var(--text3);font-size:11px;text-align:center;">Aucun message</div>';
+        
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }, (error) => {
+        console.error('Chat error:', error);
+        statusDot.style.background = 'var(--error)';
+        statusText.textContent = 'Erreur';
+        messagesDiv.innerHTML = '<div style="padding:10px;color:var(--error);font-size:11px;">Erreur Firestore</div>';
+      });
+    
+    function sendMsg() {
+      const text = inputField.value.trim();
+      if(!text) return;
+      
+      const now = Date.now();
+      if(now - lastSendTime < SEND_DELAY) return;
+      
+      db.collection('chat_messages').add({
+        text: text,
+        userId: userId,
+        userName: userName,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => {
+        console.error('Send error:', err);
+        statusText.textContent = 'Erreur envoi';
+      });
+      
+      inputField.value = '';
+      lastSendTime = now;
+      
+      sendBtn.disabled = true;
+      let t = 2;
+      const iv = setInterval(() => {
+        t--;
+        if(t <= 0) { clearInterval(iv); sendBtn.disabled = false; }
+      }, 1000);
+    }
+    
+    sendBtn.addEventListener('click', sendMsg);
+    inputField.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+    });
+    
+  } catch(error) {
+    console.error('Chat init error:', error);
+    messagesDiv.innerHTML = '<div style="padding:10px;color:var(--text3);font-size:11px;">Erreur: ' + error.message + '</div>';
+    statusDot.style.background = 'var(--error)';
+    statusText.textContent = 'Erreur init';
+  }
 
 function escapeHtml(text) {
   const div = document.createElement('div');
