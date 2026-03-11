@@ -444,6 +444,33 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .ripple-container{position:relative;overflow:hidden;}
 .ripple{position:absolute;border-radius:50%;background:rgba(79,142,247,.3);animation:ripple .6s linear;pointer-events:none;}
 </style>
+<script type="module">
+// ══ FIREBASE INIT ══
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
+  authDomain: "darksearcher-33468.firebaseapp.com",
+  projectId: "darksearcher-33468",
+  storageBucket: "darksearcher-33468.firebasestorage.app",
+  messagingSenderId: "717210037208",
+  appId: "1:717210037208:web:5b706dc3a03f7994b360ad"
+};
+
+const _fbApp = initializeApp(firebaseConfig);
+const _db = getFirestore(_fbApp);
+window._db = _db;
+window._fbReady = true;
+window._fsDoc = doc;
+window._fsSet = setDoc;
+window._fsGet = getDoc;
+window._fsCol = collection;
+window._fsSnap = onSnapshot;
+window._fsDel = deleteDoc;
+window._fsTs = serverTimestamp;
+console.log('[DarkSearcher] Firebase connecté ✅');
+</script>
 </head>
 <body>
 
@@ -858,6 +885,7 @@ function getUsers(){
 }
 
 function saveUsers(users){
+  // Toujours sauvegarder en local d'abord (rapide)
   try{
     const s={};
     for(const[k,u]of Object.entries(users)){
@@ -866,7 +894,14 @@ function saveUsers(users){
     }
     localStorage.setItem('ds_users',JSON.stringify(s));
   }catch(e){}
-  try{syncJB(users);}catch(e){}
+  // Sync Firestore (sans mot de passe)
+  if(window._fbReady&&window._db){
+    for(const[k,u]of Object.entries(users)){
+      if(k==='admin')continue; // admin géré côté code uniquement
+      const safe={username:u.username,email:u.email||'',plan:u.plan||'free',role:u.role||'user',since:u.since||'',status:u.status||'actif',searches:u.searches||0,lastSearchDay:u.lastSearchDay||'',updatedAt:window._fsTs()};
+      window._fsSet(window._fsDoc(window._db,'users',k),safe,{merge:true}).catch(()=>{});
+    }
+  }
 }
 
 function getSession(){try{return JSON.parse(localStorage.getItem('ds_session')||'null');}catch(e){return null;}}
@@ -1027,6 +1062,17 @@ function enterApp(account){
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display='block';
+  // Sync depuis Firestore si connecté
+  if(window._fbReady&&window._db&&account.username!=='admin'){
+    window._fsGet(window._fsDoc(window._db,'users',account.username)).then(snap=>{
+      if(snap.exists()){
+        const d=snap.data();
+        const users=getUsers();
+        users[account.username]={...users[account.username],...d,password:account.password};
+        localStorage.setItem('ds_users',JSON.stringify(Object.fromEntries(Object.entries(users).map(([k,v])=>{const c={...v};if(k==='admin')delete c.password;return[k,c];}))));
+      }
+    }).catch(()=>{});
+  }
   document.getElementById('topbar-avatar-letter').textContent=account.username[0].toUpperCase();
   document.getElementById('sb-avatar-letter').textContent=account.username[0].toUpperCase();
   document.getElementById('sb-username').textContent=account.username;
@@ -1058,22 +1104,50 @@ function showPage(id){
   const p=document.getElementById('page-'+id);if(p)p.classList.add('active');
 }
 
-let adminInterval=null;
+let adminInterval=null,_fbUnsub=null;
 function sideNav(el,page){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
   el.classList.add('active');
   showPage(page);
   if(page==='admin'){
     refreshAdminTable();
+    // Listener temps réel Firestore
+    if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
+    if(window._fbReady&&window._db){
+      _fbUnsub=window._fsSnap(window._fsCol(window._db,'users'),snap=>{
+        const fbUsers={};
+        snap.forEach(d=>{fbUsers[d.id]={...d.data(),username:d.id};});
+        _mergeAndRenderAdmin(fbUsers);
+      });
+    }
     if(adminInterval)clearInterval(adminInterval);
-    adminInterval=setInterval(refreshAdminTable,5000); // refresh toutes les 5s
+    adminInterval=setInterval(refreshAdminTable,10000);
   } else {
     if(adminInterval){clearInterval(adminInterval);adminInterval=null;}
+    if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
   }
   if(page==='compte'){
     const sess=getSession();
     if(sess){const users=getUsers();updateComptePage(users[sess.username]||{});}
   }
+}
+
+function _mergeAndRenderAdmin(fbUsers){
+  const local=getUsers();
+  const merged={...local};
+  for(const[k,u]of Object.entries(fbUsers)){
+    if(k==='admin')continue;
+    merged[k]={...u,password:local[k]?.password||''};
+  }
+  const all=Object.values(merged);
+  document.getElementById('admin-total-users').textContent=all.length;
+  document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
+  document.getElementById('admin-free-users').textContent=all.filter(u=>u.plan==='free').length;
+  document.getElementById('admin-searches-total').textContent=all.reduce((s,u)=>s+(u.searches||0),0);
+  const onlineLabel=document.getElementById('admin-online-label');
+  if(onlineLabel)onlineLabel.textContent='Temps réel 🟢 '+all.length+' membres';
+  renderAdminTable(all);
+  renderAdminNotifs();
 }
 
 function switchTab(el,id){
@@ -1230,7 +1304,11 @@ function saveEditUser(){
 function deleteUser(username){
   if(username==='admin'){alert('Impossible de supprimer admin.');return;}
   if(!confirm('Supprimer '+username+' ?'))return;
-  const users=getUsers();delete users[username];saveUsers(users);refreshAdminTable();
+  const users=getUsers();delete users[username];saveUsers(users);
+  // Supprimer aussi de Firestore
+  if(window._fbReady&&window._db)
+    window._fsDel(window._fsDoc(window._db,'users',username)).catch(()=>{});
+  refreshAdminTable();
 }
 
 // ── Pricing ──
