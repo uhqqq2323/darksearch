@@ -23,7 +23,7 @@ html{scroll-behavior:smooth;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 *{cursor:crosshair !important;}
 
-/* ══ CURSEUR CUSTOM ══ */
+
 #cursor{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
 #cursor::before{content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:1.5px;height:20px;background:var(--blue);border-radius:1px;transition:background .15s,height .15s;}
 #cursor::after{content:'';position:absolute;top:50%;left:-10px;transform:translateY(-50%);height:1.5px;width:20px;background:var(--blue);border-radius:1px;transition:background .15s,width .15s;}
@@ -33,12 +33,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 #cursor.hover::before,#cursor.hover::after{background:var(--green);}
 #cursor-ring.hover{width:38px;height:38px;border-color:rgba(16,212,116,0.5);}
 
-/* ══ SCROLLBAR ══ */
+
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
 
-/* ══ ANIMATIONS ══ */
+
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
@@ -49,21 +49,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes notifIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes matrixRain{0%{transform:translateY(-100%);opacity:1}100%{transform:translateY(100vh);opacity:0}}
 
-/* ══ SCANLINE EFFECT ══ */
+
 body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(transparent,rgba(79,142,247,0.06),transparent);display:none;pointer-events:none;z-index:1;}
 
-/* ══ ANTI-DEVTOOLS OVERLAY ══ */
+
 #devtools-warning{display:none;position:fixed;inset:0;z-index:99997;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 #devtools-warning.show{display:flex;animation:fadeIn .3s;}
 .dw-icon{font-size:52px;}
 .dw-title{font-size:24px;font-weight:700;color:var(--red);font-family:var(--mono);}
 .dw-sub{font-size:13px;color:var(--text2);}
 
-/* ══ AUTH ══ */
+
 .auth-page{display:none;position:fixed;inset:0;z-index:800;align-items:center;justify-content:center;background:var(--bg);}
 .auth-page.show{display:flex;animation:fadeIn .4s ease;}
 .auth-wrap{width:100%;max-width:420px;padding:24px;position:relative;}
-/* Matrix bg sur auth */
+
 .auth-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(79,142,247,0.08) 0%,transparent 70%);pointer-events:none;}
 .auth-box{background:rgba(14,17,23,0.95);border:1px solid var(--border2);border-radius:var(--r2);padding:40px 36px;box-shadow:0 0 60px rgba(0,0,0,0.6),0 0 0 1px rgba(79,142,247,0.05);animation:scaleIn .35s ease;backdrop-filter:blur(20px);position:relative;}
 .auth-box::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.4),transparent);}
@@ -96,10 +96,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .auth-reset a{font-size:10px;color:var(--text3);opacity:.5;font-family:var(--mono);}
 .auth-reset a:hover{opacity:1;color:var(--red);}
 
-/* ══ APP ══ */
+
 #app{display:none;min-height:100vh;}
 
-/* TOPBAR */
+
 .topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:rgba(8,10,14,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(24px);display:flex;align-items:center;padding:0 20px 0 0;z-index:300;}
 .topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.3),transparent);}
 .topbar-brand{width:var(--sidebar-w);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0;}
@@ -118,7 +118,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .tb-logout{padding:7px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;color:var(--text2);transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .tb-logout:hover{border-color:var(--red);color:var(--red);background:var(--red2);}
 
-/* NOTIF PANEL */
+
 .notif-panel{position:fixed;top:64px;right:16px;width:330px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);z-index:400;display:none;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
 .notif-panel.show{display:block;animation:notifIn .2s ease;}
 .notif-panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -137,7 +137,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .ni-date{font-size:10px;color:var(--text3);margin-top:5px;font-family:var(--mono);}
 .notif-empty{padding:32px;text-align:center;font-size:12px;color:var(--text3);}
 
-/* SIDEBAR */
+
 .sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;z-index:200;display:flex;flex-direction:column;padding:16px 0 20px;}
 .sidebar::-webkit-scrollbar{width:0;}
 .sb-user{padding:16px 16px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;}
@@ -151,7 +151,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .plan-pro{background:rgba(255,165,2,.12);color:var(--amber);}
 .plan-elite{background:rgba(79,142,247,.12);color:var(--blue);}
 .plan-admin{background:rgba(255,71,87,.12);color:var(--red);}
-/* Stat mini dans sidebar */
+
 .sb-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .sb-mini-stat{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;text-align:center;}
 .sb-mini-stat-num{font-size:15px;font-weight:700;color:var(--text);font-family:var(--mono);}
@@ -168,28 +168,34 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .sb-divider{height:1px;background:var(--border);margin:8px 10px;}
 .sb-spacer{flex:1;}
 
-/* MAIN */
+
 .main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:28px;}
 .page{display:none;}
 .page.active{display:block;}
 
-/* BREADCRUMB */
+
 .breadcrumb{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);margin-bottom:24px;font-family:var(--mono);}
 .breadcrumb-sep{color:var(--text3);}
 .breadcrumb-current{color:var(--text2);}
 
-/* PAGE HEADER */
+
 .page-title{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px;}
 .page-subtitle{font-size:13px;color:var(--text2);margin-bottom:24px;}
 
-/* STATUS BAR */
+
 .status-bar{display:inline-flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:11px;color:var(--text2);margin-bottom:24px;font-family:var(--mono);}
 .status-sep{color:var(--border2);}
 
-/* CARDS */
+
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);}
 
-/* STAT CARDS HOME */
+
+.welcome-container{margin-bottom:30px;padding:20px;background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(16,212,116,.05));border:1px solid rgba(79,142,247,.15);border-radius:var(--r2);position:relative;overflow:hidden;}
+.welcome-container::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,.3),transparent);}
+.welcome-text{font-size:28px;font-weight:700;letter-spacing:-.5px;color:var(--text);font-family:var(--font);}
+.welcome-username{color:var(--blue);text-shadow:0 0 20px rgba(79,142,247,.3);}
+
+
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;overflow:hidden;}
 .stat-card:hover{border-color:var(--border2);transform:translateY(-1px);}
@@ -203,7 +209,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .stat-label{font-size:11px;color:var(--text2);margin-top:6px;}
 .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 
-/* DISCORD CARD */
+
 .discord-card{background:linear-gradient(135deg,rgba(88,101,242,.08),var(--bg2));border:1px solid rgba(88,101,242,.2);border-radius:var(--r2);padding:24px;}
 .dc-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.25);border-radius:6px;padding:3px 10px;font-size:9px;font-weight:700;color:#7289da;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;font-family:var(--mono);}
 .dc-title{font-size:18px;font-weight:700;margin-bottom:8px;}
@@ -211,7 +217,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .dc-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.3);border-radius:8px;color:#7289da;font-size:13px;font-weight:500;text-decoration:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .dc-btn:hover{background:rgba(88,101,242,.25);}
 
-/* SNAKE */
+
 .snake-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;}
 .snake-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .snake-title{font-size:13px;font-weight:600;}
@@ -227,7 +233,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .snake-btn-pause{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
 .snake-btn-pause:hover{border-color:var(--amber);color:var(--amber);}
 
-/* ══ RECHERCHE ══ */
+
 .search-hero{text-align:center;padding:4px 0 28px;}
 .search-hero-icon{width:60px;height:60px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
 .search-hero-title{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
@@ -298,7 +304,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .loader-text{font-size:12px;color:var(--text2);font-family:var(--mono);}
 #results-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;opacity:.2;max-width:780px;margin:24px auto 0;}
 
-/* ══ ABONNEMENT ══ */
+
 .billing-toggle-wrap{display:inline-flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 14px;margin-bottom:28px;font-size:12px;}
 .billing-lbl{color:var(--text3);font-weight:500;}
 .billing-lbl.active{color:var(--text);}
@@ -350,7 +356,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .faq-a{display:none;padding:0 20px 16px;font-size:13px;color:var(--text2);line-height:1.7;border-top:1px solid var(--border);}
 .faq-item.open .faq-a{display:block;animation:slideUp .2s ease;}
 
-/* ══ COMPTE ══ */
+
 .compte-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .compte-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);}
 .compte-card-head{padding:14px 20px;border-bottom:1px solid var(--border);}
@@ -374,14 +380,14 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .compte-error{background:var(--red2);border:1px solid rgba(255,71,87,.2);color:var(--red);}
 .compte-success{background:var(--green2);border:1px solid rgba(16,212,116,.2);color:var(--green);}
 
-/* ══ ADMIN ══ */
+
 .admin-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
 .admin-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;overflow:hidden;}
 .admin-stat:hover{border-color:var(--border2);}
 .admin-stat-num{font-size:30px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;}
 .admin-stat-label{font-size:11px;color:var(--text2);margin-top:5px;}
 .admin-stat-trend{font-size:10px;color:var(--green);font-family:var(--mono);margin-top:3px;}
-/* Realtime dot */
+
 .rt-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(16,212,116,.6);animation:pulse 4s infinite;margin-right:5px;vertical-align:middle;}
 .admin-table-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
 .admin-table-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -401,7 +407,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .btn-edit:hover{background:rgba(79,142,247,.2);}
 .btn-delete{border-color:rgba(255,71,87,.3);color:var(--red);background:var(--red2);}
 .btn-delete:hover{background:rgba(255,71,87,.15);}
-/* Online indicator in table */
+
 .user-online-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text3);margin-right:4px;vertical-align:middle;}
 .user-online-dot.on{background:var(--green);box-shadow:0 0 6px rgba(16,212,116,.5);}
 .notif-editor{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:22px;margin-top:18px;}
@@ -420,7 +426,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .btn-del-notif{background:var(--red2);border:1px solid rgba(255,71,87,.2);border-radius:5px;color:var(--red);font-size:10px;font-weight:600;padding:3px 8px;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .btn-del-notif:hover{background:rgba(255,71,87,.15);}
 
-/* ══ MODALS ══ */
+
 .modal-overlay{display:none;position:fixed;inset:0;z-index:700;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);}
 .modal-overlay.show{display:flex;animation:fadeIn .2s;}
 .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;max-width:380px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:scaleIn .25s ease;}
@@ -436,23 +442,23 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .modal-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .modal-select:focus{border-color:var(--blue);}
 
-/* ══ RIPPLE EFFECT ══ */
+
 .ripple-container{position:relative;}
 </style>
 
 </head>
 <body>
 
-<!-- curseur CSS natif crosshair -->
 
-<!-- ANTI-DEVTOOLS -->
+
+
 <div id="devtools-warning">
   <div class="dw-icon">🔒</div>
   <div class="dw-title">ACCÈS REFUSÉ</div>
   <div class="dw-sub">Les outils de développement sont désactivés sur cette plateforme.</div>
 </div>
 
-<!-- AUTH LOGIN -->
+
 <div id="login-page" class="auth-page show">
   <div class="auth-wrap"><div class="auth-box">
     <div class="auth-logo-wrap">
@@ -478,7 +484,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
   </div></div>
 </div>
 
-<!-- AUTH REGISTER -->
+
 <div id="register-page" class="auth-page">
   <div class="auth-wrap"><div class="auth-box">
     <div class="auth-logo-wrap">
@@ -513,9 +519,9 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
   </div></div>
 </div>
 
-<!-- APP -->
+
 <div id="app">
-  <!-- TOPBAR -->
+  
   <div class="topbar">
     <div class="topbar-brand">
       <div class="topbar-logo-icon">🔍</div>
@@ -532,7 +538,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
     </div>
   </div>
 
-  <!-- NOTIF PANEL -->
+  
   <div class="notif-panel" id="notif-panel">
     <div class="notif-panel-head">
       <div class="notif-panel-title">Notifications</div>
@@ -541,7 +547,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
     <div class="notif-list" id="notif-list"></div>
   </div>
 
-  <!-- SIDEBAR -->
+  
   <div class="sidebar">
     <div class="sb-user">
       <div class="sb-user-top">
@@ -580,12 +586,15 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
+  
   <div class="main">
 
-    <!-- ACCUEIL -->
+    
     <div id="page-accueil" class="page active">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Accueil</span></div>
+      <div class="welcome-container">
+        <div class="welcome-text">Bienvenue <span class="welcome-username" id="welcome-username"></span></div>
+      </div>
       <div class="stats-grid">
         <div class="stat-card blue"><span class="stat-icon">📦</span><div class="stat-num" id="stat-total">0</div><div class="stat-label">Records indexés</div></div>
         <div class="stat-card green"><span class="stat-icon">🌐</span><div class="stat-num" id="stat-sources">0</div><div class="stat-label">Sources actives</div></div>
@@ -616,7 +625,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       </div>
     </div>
 
-    <!-- RECHERCHE -->
+    
     <div id="page-recherche" class="page">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Recherche avancée</span></div>
       <div class="search-hero">
@@ -632,7 +641,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
         </div>
       </div>
       <div class="search-limit-warning" id="search-limit-warn"></div>
-      <!-- BREACH -->
+      
       <div class="tab-content active" id="tab-breach">
         <div class="search-card">
           <div class="filter-section">
@@ -668,7 +677,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
           <div class="search-footer">🔒 Chiffré · Anonyme · Sécurisé</div>
         </div>
       </div>
-      <!-- STEALER -->
+      
       <div class="tab-content" id="tab-stealer">
         <div class="search-card">
           <div class="filter-section">
@@ -681,7 +690,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
           <button class="btn-search ripple-container" onclick="doSearch('stealer')">🦠 Rechercher dans les logs</button>
         </div>
       </div>
-      <!-- OSINT -->
+      
       <div class="tab-content" id="tab-osint">
         <div class="search-card">
           <div class="filter-section">
@@ -701,7 +710,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       <div id="results-placeholder"><div style="font-size:40px">🔍</div><div style="font-size:14px;font-weight:600;color:var(--text2)">En attente d'une requête</div></div>
     </div>
 
-    <!-- ABONNEMENT -->
+    
     <div id="page-abonnement" class="page">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Shop</span></div>
       <div class="page-title">Shop</div>
@@ -737,7 +746,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       </div>
     </div>
 
-    <!-- COMPTE -->
+    
     <div id="page-compte" class="page">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Mon compte</span></div>
       <div class="page-title">Mon compte</div>
@@ -767,7 +776,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       </div>
     </div>
 
-    <!-- ADMIN -->
+    
     <div id="page-admin" class="page">
       <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Administration</span></div>
       <div class="page-title">Panel Administration</div>
@@ -802,7 +811,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
   </div>
 </div>
 
-<!-- MODALS -->
+
 <div class="modal-overlay" id="plan-modal">
   <div class="modal-box">
     <div class="modal-title">Plan <span id="modal-plan-name"></span></div>
@@ -1024,11 +1033,28 @@ function updateSearchDisplay(a){
   if(el)el.textContent=left+(limit===Infinity?'':'/'+limit);
 }
 
+function startWelcomeTyping(username){
+  const el=document.getElementById('welcome-username');
+  if(!el)return;
+  el.textContent='';
+  let idx=0;
+  const speed=80;
+  function type(){
+    if(idx<username.length){
+      el.textContent+=username[idx];
+      idx++;
+      setTimeout(type,speed);
+    }
+  }
+  type();
+}
+
 function enterApp(account){
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display='block';
   
+  startWelcomeTyping(account.username);
   if(window._fbReady&&window._db&&account.username!=='admin'){
     window._db.collection('users').doc(account.username).get().then(snap=>{
       if(snap.exists()){
