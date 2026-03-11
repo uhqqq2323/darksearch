@@ -822,36 +822,6 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 </div>
 
 <script>
-// ══ FIREBASE — chargement dynamique ══
-(function(){
-  const s1 = document.createElement('script');
-  s1.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
-  s1.onload = function(){
-    const s2 = document.createElement('script');
-    s2.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js';
-    s2.onload = function(){
-      const app = firebase.initializeApp({
-        apiKey: "AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
-        authDomain: "darksearcher-33468.firebaseapp.com",
-        projectId: "darksearcher-33468",
-        storageBucket: "darksearcher-33468.firebasestorage.app",
-        messagingSenderId: "717210037208",
-        appId: "1:717210037208:web:5b706dc3a03f7994b360ad"
-      });
-      window._db = firebase.firestore();
-      window._fbReady = true;
-      window.firebase = firebase;
-      console.log('[DarkSearcher] Firebase Firestore connecté ✅');
-      // Si admin panel ouvert, rafraîchir
-      if(document.getElementById('page-admin')?.classList.contains('active')){
-        startFirestoreListener();
-      }
-    };
-    document.head.appendChild(s2);
-  };
-  document.head.appendChild(s1);
-})();
-
 // ═══════════════════════════════════════════════════
 //  DarkSearcher JS Core — Version finale clean
 // ═══════════════════════════════════════════════════
@@ -1521,3 +1491,33 @@ document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='
     if(account&&account.status!=='banni')enterApp(account);
   }
 })();
+
+// ── Firebase — chargé APRÈS le JS principal ──
+window.addEventListener('load', function(){
+  function loadScript(src, cb){
+    const s=document.createElement('script');
+    s.src=src;
+    s.onload=cb;
+    s.onerror=function(){ console.warn('[Firebase] Impossible de charger '+src); };
+    document.head.appendChild(s);
+  }
+  loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function(){
+    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', function(){
+      try{
+        if(!firebase.apps.length){
+          firebase.initializeApp({
+            apiKey:"AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
+            authDomain:"darksearcher-33468.firebaseapp.com",
+            projectId:"darksearcher-33468",
+            storageBucket:"darksearcher-33468.firebasestorage.app",
+            messagingSenderId:"717210037208",
+            appId:"1:717210037208:web:5b706dc3a03f7994b360ad"
+          });
+        }
+        window._db=firebase.firestore();
+        window._fbReady=true;
+        console.log('[DarkSearcher] Firebase prêt ✅');
+      }catch(e){ console.warn('[Firebase] Erreur init:',e); }
+    });
+  });
+});
