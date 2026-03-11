@@ -1432,7 +1432,7 @@ function initSnake(){
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height,cell=20;
   snakeDir={x:1,y:0};
-  let snake=[{x:10,y:5}],dir=snakeDir,food=spawn(),score=0,running=false,loop=null;
+  let snake=[{x:10,y:5}],food=spawn(),score=0,running=false,loop=null;
   document.getElementById('snake-best').textContent=localStorage.getItem('snake_best')||'0';
   function spawn(){return{x:Math.floor(Math.random()*(W/cell)),y:Math.floor(Math.random()*(H/cell))};}
   function draw(){
@@ -1448,7 +1448,7 @@ function initSnake(){
     ctx.fillStyle='#10d474';ctx.fillRect(food.x*cell+2,food.y*cell+2,cell-4,cell-4);
   }
   function step(){
-    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    const head={x:snake[0].x+snakeDir.x,y:snake[0].y+snakeDir.y};
     if(head.x<0||head.x>=W/cell||head.y<0||head.y>=H/cell||snake.some(s=>s.x===head.x&&s.y===head.y)){
       clearInterval(loop);running=false;
       ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
@@ -1464,9 +1464,8 @@ function initSnake(){
     draw();
   }
   snakeGame={
-    play(){if(running)return;if(snake.length===1&&dir.x===1){snake=[{x:10,y:5}];dir={x:1,y:0};score=0;document.getElementById('snake-score').textContent=0;}running=true;loop=setInterval(step,150);},
-    pause(){clearInterval(loop);running=false;},
-    _handleDir(nd){if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;}}
+    play(){if(running)return;if(snake.length===1&&snakeDir.x===1){snake=[{x:10,y:5}];snakeDir={x:1,y:0};score=0;document.getElementById('snake-score').textContent=0;}running=true;loop=setInterval(step,150);},
+    pause(){clearInterval(loop);running=false;}
   };
   draw();
 }
@@ -1480,12 +1479,8 @@ document.addEventListener('keydown',e=>{
     e.stopPropagation();
     const m={z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
     const nd=m[key];
-    if(snakeGame&&snakeGame._handleDir){
-      snakeGame._handleDir(nd);
-    }else{
-      if(!(nd.x===-snakeDir.x&&nd.y===-snakeDir.y)){
-        snakeDir=nd;
-      }
+    if(!(nd.x===-snakeDir.x&&nd.y===-snakeDir.y)){
+      snakeDir=nd;
     }
   }
 },true);
