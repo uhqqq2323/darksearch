@@ -1425,11 +1425,14 @@ document.addEventListener('click',e=>{
 
 
 let snakeGame=null;
+let snakeDir={x:1,y:0};
+
 function initSnake(){
   const canvas=document.getElementById('snake-canvas');if(!canvas)return;
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height,cell=20;
-  let snake=[{x:10,y:5}],dir={x:1,y:0},food=spawn(),score=0,running=false,loop=null;
+  snakeDir={x:1,y:0};
+  let snake=[{x:10,y:5}],dir=snakeDir,food=spawn(),score=0,running=false,loop=null;
   document.getElementById('snake-best').textContent=localStorage.getItem('snake_best')||'0';
   function spawn(){return{x:Math.floor(Math.random()*(W/cell)),y:Math.floor(Math.random()*(H/cell))};}
   function draw(){
@@ -1466,11 +1469,6 @@ function initSnake(){
     _handleDir(nd){if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;}}
   };
   draw();
-  document.addEventListener('keydown',e=>{
-    const key = e.key.toLowerCase();
-    const m={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
-    const nd=m[key];if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;e.preventDefault();}
-  });
 }
 function snakePlay(){if(snakeGame)snakeGame.play();}
 function snakePause(){if(snakeGame)snakeGame.pause();}
@@ -1478,11 +1476,16 @@ function snakePause(){if(snakeGame)snakeGame.pause();}
 document.addEventListener('keydown',e=>{
   const key=e.key.toLowerCase();
   if(['z','q','s','d'].includes(key)){
+    e.preventDefault();
+    e.stopPropagation();
+    const m={z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
+    const nd=m[key];
     if(snakeGame&&snakeGame._handleDir){
-      e.preventDefault();
-      e.stopPropagation();
-      const m={z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
-      snakeGame._handleDir(m[key]);
+      snakeGame._handleDir(nd);
+    }else{
+      if(!(nd.x===-snakeDir.x&&nd.y===-snakeDir.y)){
+        snakeDir=nd;
+      }
     }
   }
 },true);
