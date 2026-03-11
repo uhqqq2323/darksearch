@@ -439,33 +439,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 /* ══ RIPPLE EFFECT ══ */
 .ripple-container{position:relative;}
 </style>
-<script type="module">
-// ══ FIREBASE INIT ══
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
-  authDomain: "darksearcher-33468.firebaseapp.com",
-  projectId: "darksearcher-33468",
-  storageBucket: "darksearcher-33468.firebasestorage.app",
-  messagingSenderId: "717210037208",
-  appId: "1:717210037208:web:5b706dc3a03f7994b360ad"
-};
-
-const _fbApp = initializeApp(firebaseConfig);
-const _db = getFirestore(_fbApp);
-window._db = _db;
-window._fbReady = true;
-window._fsDoc = doc;
-window._fsSet = setDoc;
-window._fsGet = getDoc;
-window._fsCol = collection;
-window._fsSnap = onSnapshot;
-window._fsDel = deleteDoc;
-window._fsTs = serverTimestamp;
-console.log('[DarkSearcher] Firebase connecté ✅');
-</script>
 </head>
 <body>
 
@@ -848,6 +822,36 @@ console.log('[DarkSearcher] Firebase connecté ✅');
 </div>
 
 <script>
+// ══ FIREBASE — chargement dynamique ══
+(function(){
+  const s1 = document.createElement('script');
+  s1.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+  s1.onload = function(){
+    const s2 = document.createElement('script');
+    s2.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js';
+    s2.onload = function(){
+      const app = firebase.initializeApp({
+        apiKey: "AIzaSyBTONse0C0Yw2nJoL3uqtpqFlhOewBc-4M",
+        authDomain: "darksearcher-33468.firebaseapp.com",
+        projectId: "darksearcher-33468",
+        storageBucket: "darksearcher-33468.firebasestorage.app",
+        messagingSenderId: "717210037208",
+        appId: "1:717210037208:web:5b706dc3a03f7994b360ad"
+      });
+      window._db = firebase.firestore();
+      window._fbReady = true;
+      window.firebase = firebase;
+      console.log('[DarkSearcher] Firebase Firestore connecté ✅');
+      // Si admin panel ouvert, rafraîchir
+      if(document.getElementById('page-admin')?.classList.contains('active')){
+        startFirestoreListener();
+      }
+    };
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+})();
+
 // ═══════════════════════════════════════════════════
 //  DarkSearcher JS Core — Version finale clean
 // ═══════════════════════════════════════════════════
@@ -890,9 +894,9 @@ function saveUsers(users){
   // Sync Firestore (sans mot de passe)
   if(window._fbReady&&window._db){
     for(const[k,u]of Object.entries(users)){
-      if(k==='admin')continue; // admin géré côté code uniquement
-      const safe={username:u.username,email:u.email||'',plan:u.plan||'free',role:u.role||'user',since:u.since||'',status:u.status||'actif',searches:u.searches||0,lastSearchDay:u.lastSearchDay||'',updatedAt:window._fsTs()};
-      window._fsSet(window._fsDoc(window._db,'users',k),safe,{merge:true}).catch(()=>{});
+      if(k==='admin')continue;
+      const safe={username:u.username,email:u.email||'',plan:u.plan||'free',role:u.role||'user',since:u.since||'',status:u.status||'actif',searches:u.searches||0,lastSearchDay:u.lastSearchDay||''};
+      window._db.collection('users').doc(k).set(safe,{merge:true}).catch(()=>{});
     }
   }
 }
@@ -1057,7 +1061,7 @@ function enterApp(account){
   document.getElementById('app').style.display='block';
   // Sync depuis Firestore — Firestore écrase le local (source de vérité)
   if(window._fbReady&&window._db&&account.username!=='admin'){
-    window._fsGet(window._fsDoc(window._db,'users',account.username)).then(snap=>{
+    window._db.collection('users').doc(account.username).get().then(snap=>{
       if(snap.exists()){
         const d=snap.data();
         const users=getUsers();
@@ -1115,11 +1119,24 @@ function sideNav(el,page){
     // Listener temps réel Firestore
     if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
     if(window._fbReady&&window._db){
-      _fbUnsub=window._fsSnap(window._fsCol(window._db,'users'),snap=>{
+      _fbUnsub=window._db.collection('users').onSnapshot(snap=>{
         const fbUsers={};
         snap.forEach(d=>{fbUsers[d.id]={...d.data(),username:d.id};});
         _mergeAndRenderAdmin(fbUsers);
       });
+    } else {
+      // Retry quand Firebase prêt
+      const retry=setInterval(()=>{
+        if(window._fbReady&&window._db){
+          clearInterval(retry);
+          if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
+          _fbUnsub=window._db.collection('users').onSnapshot(snap=>{
+            const fbUsers={};
+            snap.forEach(d=>{fbUsers[d.id]={...d.data(),username:d.id};});
+            _mergeAndRenderAdmin(fbUsers);
+          });
+        }
+      },500);
     }
     if(adminInterval)clearInterval(adminInterval);
     adminInterval=setInterval(refreshAdminTable,15000);
@@ -1318,13 +1335,11 @@ function saveEditUser(){
   saveUsers(users);
   // 2. Mettre à jour Firestore (source de vérité)
   if(window._fbReady&&window._db){
-    window._fsSet(
-      window._fsDoc(window._db,'users',username),
-      {plan, status, updatedAt:window._fsTs()},
+    window._db.collection('users').doc(username).set(
+      {plan, status},
       {merge:true}
-    ).then(()=>{
-      console.log('[Admin] Plan mis à jour dans Firestore ✅');
-    }).catch(e=>console.error('[Admin] Erreur Firestore:',e));
+    ).then(()=>console.log('[Admin] Plan mis à jour ✅'))
+     .catch(e=>console.error('[Admin] Erreur:',e));
   }
   document.getElementById('edit-modal').classList.remove('show');
   refreshAdminTable();
@@ -1336,7 +1351,7 @@ function deleteUser(username){
   const users=getUsers();delete users[username];saveUsers(users);
   // Supprimer aussi de Firestore
   if(window._fbReady&&window._db)
-    window._fsDel(window._fsDoc(window._db,'users',username)).catch(()=>{});
+    window._db.collection('users').doc(username).delete().catch(()=>{});
   refreshAdminTable();
 }
 
