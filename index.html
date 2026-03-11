@@ -1062,14 +1062,22 @@ function enterApp(account){
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display='block';
-  // Sync depuis Firestore si connecté
+  // Sync depuis Firestore — Firestore écrase le local (source de vérité)
   if(window._fbReady&&window._db&&account.username!=='admin'){
     window._fsGet(window._fsDoc(window._db,'users',account.username)).then(snap=>{
       if(snap.exists()){
         const d=snap.data();
         const users=getUsers();
-        users[account.username]={...users[account.username],...d,password:account.password};
-        localStorage.setItem('ds_users',JSON.stringify(Object.fromEntries(Object.entries(users).map(([k,v])=>{const c={...v};if(k==='admin')delete c.password;return[k,c];}))));
+        const updated={...users[account.username],...d,password:account.password};
+        users[account.username]=updated;
+        const toSave={};
+        for(const[k,u]of Object.entries(users)){toSave[k]={...u};if(k==='admin')delete toSave[k].password;}
+        localStorage.setItem('ds_users',JSON.stringify(toSave));
+        // Mettre à jour l'affichage si le plan a changé
+        updateSearchDisplay(updated);
+        updateComptePage(updated);
+        const pb=document.getElementById('sb-plan-badge');
+        if(pb){pb.textContent=updated.plan[0].toUpperCase()+updated.plan.slice(1);pb.className='sb-plan-badge plan-'+updated.plan;}
       }
     }).catch(()=>{});
   }
@@ -1135,10 +1143,24 @@ function sideNav(el,page){
 function _mergeAndRenderAdmin(fbUsers){
   const local=getUsers();
   const merged={...local};
+  // Firestore = source de vérité pour plan/status
   for(const[k,u]of Object.entries(fbUsers)){
     if(k==='admin')continue;
-    merged[k]={...u,password:local[k]?.password||''};
+    merged[k]={
+      ...(local[k]||{}),
+      ...u,
+      password:local[k]?.password||'' // garder le password local
+    };
   }
+  // Réécrire le localStorage avec les données Firestore
+  try{
+    const toSave={};
+    for(const[k,u]of Object.entries(merged)){
+      toSave[k]={...u};
+      if(k==='admin')delete toSave[k].password;
+    }
+    localStorage.setItem('ds_users',JSON.stringify(toSave));
+  }catch(e){}
   const all=Object.values(merged);
   document.getElementById('admin-total-users').textContent=all.length;
   document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
@@ -1293,10 +1315,24 @@ function editUser(username){
 
 function saveEditUser(){
   const username=document.getElementById('edit-username-key').value;
-  const users=getUsers();if(!users[username])return;
-  users[username].plan=document.getElementById('edit-plan').value;
-  users[username].status=document.getElementById('edit-status').value;
+  const plan=document.getElementById('edit-plan').value;
+  const status=document.getElementById('edit-status').value;
+  // 1. Mettre à jour localStorage
+  const users=getUsers();
+  if(!users[username])return;
+  users[username].plan=plan;
+  users[username].status=status;
   saveUsers(users);
+  // 2. Mettre à jour Firestore (source de vérité)
+  if(window._fbReady&&window._db){
+    window._fsSet(
+      window._fsDoc(window._db,'users',username),
+      {plan, status, updatedAt:window._fsTs()},
+      {merge:true}
+    ).then(()=>{
+      console.log('[Admin] Plan mis à jour dans Firestore ✅');
+    }).catch(e=>console.error('[Admin] Erreur Firestore:',e));
+  }
   document.getElementById('edit-modal').classList.remove('show');
   refreshAdminTable();
 }
