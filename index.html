@@ -8,21 +8,30 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0a0d12;--bg2:#111620;--bg3:#1a1f2e;--bg4:#232d3f;--bg5:#2a3547;
-  --border:#2a3f5a;--border2:#3a4f6a;
-  --text:#e8eef8;--text2:#8b96a8;--text3:#5a6576;
-  --blue:#3b82f6;--blue2:#2563eb;--blue-glow:rgba(59,130,246,0.15);
-  --green:#10b981;--green2:rgba(16,185,129,0.12);
-  --red:#ef4444;--red2:rgba(239,68,68,0.12);
-  --amber:#f59e0b;--purple:#8b5cf6;
+  --bg:#0a0c10;--bg2:#0f121a;--bg3:#151a25;--bg4:#1b2535;--bg5:#212a3a;
+  --border:#1f2945;--border2:#2a3a55;
+  --text:#e8eef8;--text2:#7e8fa8;--text3:#4a5565;
+  --blue:#5ba3ff;--blue2:#4590f0;--blue-glow:rgba(91,163,255,0.18);
+  --green:#1ae88a;--green2:rgba(26,232,138,0.12);
+  --red:#ff5a6e;--red2:rgba(255,90,110,0.12);
+  --amber:#ffb726;--purple:#c77dff;
   --sidebar-w:240px;--topbar-h:56px;
-  --r:8px;--r2:12px;
-  --font:'Segoe UI', system-ui, sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:16px;--r2:20px;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 html{scroll-behavior:smooth;}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;cursor:auto;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+*{cursor:crosshair !important;}
 
-/* ══ CURSEUR NORMAL ══ */
+/* ══ CURSEUR CUSTOM ══ */
+#cursor{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+#cursor::before{content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:1.5px;height:20px;background:var(--blue);border-radius:1px;transition:background .15s,height .15s;}
+#cursor::after{content:'';position:absolute;top:50%;left:-10px;transform:translateY(-50%);height:1.5px;width:20px;background:var(--blue);border-radius:1px;transition:background .15s,width .15s;}
+#cursor-ring{position:fixed;width:28px;height:28px;border:1px solid rgba(79,142,247,0.4);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .12s ease;}
+#cursor.click::before,#cursor.click::after{background:white;}
+#cursor-ring.click{width:18px;height:18px;}
+#cursor.hover::before,#cursor.hover::after{background:var(--green);}
+#cursor-ring.hover{width:38px;height:38px;border-color:rgba(16,212,116,0.5);}
 
 /* ══ SCROLLBAR ══ */
 ::-webkit-scrollbar{width:3px;}
@@ -429,177 +438,6 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 
 /* ══ RIPPLE EFFECT ══ */
 .ripple-container{position:relative;}
-/* AMÉLIORATIONS VISELLES */
-
-/* Admin table styling */
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.admin-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text2);
-  border-bottom: 1px solid var(--border);
-  background: rgba(0,0,0,0.2);
-}
-
-.admin-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-
-.admin-table tr:hover {
-  background: rgba(59, 130, 246, 0.05);
-}
-
-.admin-table tr:last-child td {
-  border: none;
-}
-
-/* User row styling */
-.user-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue), var(--purple));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-}
-
-.user-info {
-  flex: 1;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-
-.user-status {
-  font-size: 11px;
-  color: var(--text3);
-}
-
-/* Status online dot */
-.status-online {
-  width: 8px;
-  height: 8px;
-  background: var(--green);
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-/* Badge styling */
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.badge-fondateur {
-  background: rgba(59, 130, 246, 0.2);
-  color: var(--blue);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.badge-admin {
-  background: rgba(239, 68, 68, 0.2);
-  color: var(--red);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.badge-staff {
-  background: rgba(168, 85, 247, 0.2);
-  color: var(--purple);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-
-.badge-pro {
-  background: rgba(245, 158, 11, 0.2);
-  color: var(--amber);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.badge-pro {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--green);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-/* Section header */
-.page-header {
-  margin-bottom: 24px;
-  padding: 0 0 16px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 6px;
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: var(--text2);
-}
-
-.member-count {
-  font-size: 12px;
-  color: var(--text2);
-  margin-left: auto;
-}
-
-/* Search bar */
-.search-bar {
-  margin-bottom: 20px;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.search-input::placeholder {
-  color: var(--text3);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--blue);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
 </style>
 
 </head>
@@ -609,7 +447,40 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 
 
 
-<div id="login-page" class="auth-page show">
+<!-- PAGE DE VÉRIFICATION CLOUDFLARE -->
+<div id="verification-page" class="auth-page show">
+  <div class="auth-wrap" style="max-width:600px">
+    <div style="text-align:center;padding:40px 20px">
+      <div style="font-size:48px;margin-bottom:20px">🔍</div>
+      <h1 style="font-size:32px;font-weight:700;margin-bottom:10px;color:var(--text)">darksearcher.xyz</h1>
+      <h2 style="font-size:20px;font-weight:600;margin-bottom:30px;color:var(--text)">Vérification de sécurité en cours</h2>
+      
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:30px;margin-bottom:30px;text-align:center">
+        <div style="display:inline-block;margin-bottom:15px">
+          <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto"></div>
+        </div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px">Vérification en cours...</div>
+        <div style="font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="width:12px;height:12px;background:var(--blue);border-radius:2px"></span>
+          Cloudflare • Protection
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:30px;text-align:left">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)">⚠️ Pourquoi cette page ?</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">
+          Ce site utilise un service de sécurité pour se protéger contre les robots malveillants. Cette page s'affiche pendant que le site vérifie que vous n'êtes pas un bot.
+        </div>
+      </div>
+
+      <div style="font-size:12px;color:var(--text3);margin-top:40px">
+        Performance & sécurité par <span style="color:var(--blue);font-weight:600">Cloudflare</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="login-page" class="auth-page">
   <div class="auth-wrap"><div class="auth-box">
     <div class="auth-logo-wrap">
       <div class="auth-logo-icon">🔍</div>
@@ -1720,4 +1591,17 @@ window.addEventListener('load', function(){
 });
 
 
+
+// ══ VÉRIFICATION CLOUDFLARE ══
+document.addEventListener('DOMContentLoaded', function() {
+  const verificationPage = document.getElementById('verification-page');
+  const loginPage = document.getElementById('login-page');
+  
+  if (verificationPage && loginPage) {
+    setTimeout(() => {
+      verificationPage.classList.remove('show');
+      loginPage.classList.add('show');
+    }, 3000);
+  }
+});
 </script>
