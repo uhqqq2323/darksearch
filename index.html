@@ -8,30 +8,30 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#0a0c10;--bg2:#0f121a;--bg3:#151a25;--bg4:#1b2535;--bg5:#212a3a;
-  --border:#1f2945;--border2:#2a3a55;
-  --text:#e8eef8;--text2:#7e8fa8;--text3:#4a5565;
-  --blue:#5ba3ff;--blue2:#4590f0;--blue-glow:rgba(91,163,255,0.18);
-  --green:#1ae88a;--green2:rgba(26,232,138,0.12);
-  --red:#ff5a6e;--red2:rgba(255,90,110,0.12);
-  --amber:#ffb726;--purple:#c77dff;
-  --sidebar-w:240px;--topbar-h:56px;
-  --r:16px;--r2:20px;
-  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  --bg:#0d0d0d;--bg2:#1a1a1a;--bg3:#252525;--bg4:#333;--bg5:#3a3a3a;
+  --border:#2a2a2a;--border2:#3d3d3d;
+  --text:#f5f5f5;--text2:#a8a8a8;--text3:#737373;
+  --accent:#00d9ff;--accent2:#00b8d4;--accent-glow:rgba(0,217,255,0.25);
+  --green:#26e07c;--green2:rgba(38,224,124,0.15);
+  --red:#ff3b6f;--red2:rgba(255,59,111,0.15);
+  --warning:#ffa500;--warning2:rgba(255,165,0,0.15);
+  --sidebar-w:260px;--topbar-h:60px;
+  --r:12px;--r2:16px;
+  --font:'Sohne',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--mono:'Courier Prime',monospace;
 }
 html{scroll-behavior:smooth;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 *{cursor:crosshair !important;}
 
-/* ══ CURSEUR CUSTOM ══ */
-#cursor{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
-#cursor::before{content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:1.5px;height:20px;background:var(--blue);border-radius:1px;transition:background .15s,height .15s;}
-#cursor::after{content:'';position:absolute;top:50%;left:-10px;transform:translateY(-50%);height:1.5px;width:20px;background:var(--blue);border-radius:1px;transition:background .15s,width .15s;}
-#cursor-ring{position:fixed;width:28px;height:28px;border:1px solid rgba(79,142,247,0.4);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .12s ease;}
-#cursor.click::before,#cursor.click::after{background:white;}
-#cursor-ring.click{width:18px;height:18px;}
-#cursor.hover::before,#cursor.hover::after{background:var(--green);}
-#cursor-ring.hover{width:38px;height:38px;border-color:rgba(16,212,116,0.5);}
+/* ══ CURSEUR CUSTOM (discret) ══ */
+#cursor{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);opacity:0.7;}
+#cursor::before{content:'';position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:1px;height:16px;background:var(--accent);transition:all .15s cubic-bezier(.4,.0,.2,1);}
+#cursor::after{content:'';position:absolute;top:50%;left:-8px;transform:translateY(-50%);height:1px;width:16px;background:var(--accent);transition:all .15s cubic-bezier(.4,.0,.2,1);}
+#cursor-ring{position:fixed;width:24px;height:24px;border:1px solid var(--accent);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:all .15s cubic-bezier(.4,.0,.2,1);opacity:0.5;}
+#cursor.click::before,#cursor.click::after{background:var(--accent);opacity:1;}
+#cursor-ring.click{width:16px;height:16px;opacity:1;}
+#cursor.hover::before,#cursor.hover::after{background:var(--green);height:20px;width:20px;}
+#cursor-ring.hover{width:32px;height:32px;border-color:var(--green);opacity:0.8;}
 
 /* ══ SCROLLBAR ══ */
 ::-webkit-scrollbar{width:3px;}
@@ -40,17 +40,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* ══ ANIMATIONS ══ */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
-@keyframes scaleIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pulse{0%,100%{opacity:0.7}50%{opacity:1}}
 @keyframes blink{0%,100%{opacity:1}49%{opacity:1}50%{opacity:0}}
-@keyframes notifIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
-@keyframes matrixRain{0%{transform:translateY(-100%);opacity:1}100%{transform:translateY(100vh);opacity:0}}
+@keyframes notifIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes glow{0%{box-shadow:0 0 8px rgba(0,217,255,0.2)}50%{box-shadow:0 0 16px rgba(0,217,255,0.4)}100%{box-shadow:0 0 8px rgba(0,217,255,0.2)}}
+@keyframes drift{0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
 
-/* ══ SCANLINE EFFECT ══ */
-body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(transparent,rgba(79,142,247,0.06),transparent);display:none;pointer-events:none;z-index:1;}
+/* ══ BACKGROUND & GRAIN ══ */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 20% 50%,rgba(0,217,255,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' result='noise' seed='1'/%3E%3C/filter%3E%3Crect width='400' height='400' fill='%230d0d0d' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.5;}
 
 
 /* ══ AUTH ══ */
@@ -58,11 +61,11 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .auth-page.show{display:flex;animation:fadeIn .4s ease;}
 .auth-wrap{width:100%;max-width:420px;padding:24px;position:relative;}
 /* Matrix bg sur auth */
-.auth-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(79,142,247,0.08) 0%,transparent 70%);pointer-events:none;}
-.auth-box{background:rgba(14,17,23,0.95);border:1px solid var(--border2);border-radius:var(--r2);padding:40px 36px;box-shadow:0 0 60px rgba(0,0,0,0.6),0 0 0 1px rgba(79,142,247,0.05);animation:scaleIn .35s ease;backdrop-filter:blur(20px);position:relative;}
-.auth-box::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.4),transparent);}
+.auth-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,217,255,0.08) 0%,transparent 70%);pointer-events:none;}
+.auth-box{background:rgba(14,17,23,0.95);border:1px solid var(--border2);border-radius:var(--r2);padding:40px 36px;box-shadow:0 0 60px rgba(0,0,0,0.6),0 0 0 1px rgba(0,217,255,0.05);animation:scaleIn .35s ease;backdrop-filter:blur(20px);position:relative;}
+.auth-box::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,217,255,0.4),transparent);}
 .auth-logo-wrap{text-align:center;margin-bottom:32px;}
-.auth-logo-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--blue-glow),rgba(79,142,247,0.05));border:1px solid rgba(79,142,247,0.25);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
+.auth-logo-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--blue-glow),rgba(0,217,255,0.05));border:1px solid rgba(0,217,255,0.25);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;box-shadow:0 0 12px rgba(0,217,255,0.2);}
 .auth-logo-text{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.5px;}
 .auth-logo-text span{color:var(--blue);}
 .auth-logo-sub{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
@@ -73,14 +76,14 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .auth-input-wrap{position:relative;}
 .auth-input-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;transition:color .2s;}
 .auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px 11px 40px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.auth-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(79,142,247,0.08),0 0 16px rgba(79,142,247,0.05);}
+.auth-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(0,217,255,0.08),0 0 16px rgba(0,217,255,0.05);}
 .auth-input:focus + .auth-input-icon, .auth-input-wrap:focus-within .auth-input-icon{color:var(--blue);}
 .auth-input::placeholder{color:var(--text3);font-size:12px;}
 .pass-strength-bar{height:2px;background:var(--bg4);border-radius:2px;margin-top:6px;overflow:hidden;}
 .pass-strength-fill{height:100%;width:0;border-radius:2px;transition:all .3s;}
 .auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:var(--r);color:white;font-size:14px;font-weight:600;cursor:none;transition:border-color .2s,box-shadow .2s,transform .2s;margin-top:8px;position:relative;overflow:hidden;font-family:var(--font);letter-spacing:.3px;}
 .auth-btn::after{content:'';position:absolute;width:100%;height:100%;top:0;left:0;background:linear-gradient(135deg,rgba(255,255,255,0.08),transparent);pointer-events:none;}
-.auth-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,0.35);}
+.auth-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,217,255,0.4);}
 .auth-btn:active{transform:scale(.99);}
 .auth-attempts{text-align:center;font-size:11px;color:var(--text3);margin-top:8px;font-family:var(--mono);}
 .auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--text2);}
@@ -95,9 +98,9 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 
 /* TOPBAR */
 .topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:rgba(8,10,14,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(24px);display:flex;align-items:center;padding:0 20px 0 0;z-index:300;}
-.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.3),transparent);}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,217,255,0.3),transparent);}
 .topbar-brand{width:var(--sidebar-w);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0;}
-.topbar-logo-icon{width:32px;height:32px;background:var(--blue-glow);border:1px solid rgba(79,142,247,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.topbar-logo-icon{width:32px;height:32px;background:var(--blue-glow);border:1px solid rgba(0,217,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
 .topbar-logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;}
 .topbar-logo-text span{color:var(--blue);}
 .topbar-center{flex:1;display:flex;align-items:center;justify-content:center;gap:20px;}
@@ -108,7 +111,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .tb-btn:hover{background:var(--bg4);border-color:var(--border2);color:var(--text);}
 .notif-badge{position:absolute;top:-5px;right:-5px;width:17px;height:17px;background:var(--red);border-radius:50%;font-size:9px;color:white;display:none;align-items:center;justify-content:center;font-weight:700;border:2px solid var(--bg);font-family:var(--mono);}
 .notif-badge.show{display:flex;}
-.tb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:2px solid rgba(79,142,247,0.3);}
+.tb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:2px solid rgba(0,217,255,0.3);}
 .tb-logout{padding:7px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;color:var(--text2);transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .tb-logout:hover{border-color:var(--red);color:var(--red);background:var(--red2);}
 
@@ -136,14 +139,14 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .sidebar::-webkit-scrollbar{width:0;}
 .sb-user{padding:16px 16px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;}
 .sb-user-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.sb-user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;flex-shrink:0;border:2px solid rgba(79,142,247,0.2);}
+.sb-user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;flex-shrink:0;border:2px solid rgba(0,217,255,0.2);}
 .sb-user-name{font-size:13px;font-weight:600;color:var(--text);}
 .sb-user-tag{font-size:11px;color:var(--text3);font-family:var(--mono);}
 .sb-plan-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono);}
 .plan-free{background:rgba(61,69,88,.3);color:var(--text3);}
 .plan-starter{background:rgba(0,229,255,.1);color:#00e5ff;}
 .plan-pro{background:rgba(255,165,2,.12);color:var(--amber);}
-.plan-elite{background:rgba(79,142,247,.12);color:var(--blue);}
+.plan-elite{background:rgba(0,217,255,.12);color:var(--blue);}
 .plan-admin{background:rgba(255,71,87,.12);color:var(--red);}
 /* Stat mini dans sidebar */
 .sb-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
@@ -184,10 +187,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);}
 
 /* WELCOME MESSAGE */
-.welcome-container{margin-bottom:30px;padding:20px;background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(16,212,116,.05));border:1px solid rgba(79,142,247,.15);border-radius:var(--r2);position:relative;overflow:hidden;}
-.welcome-container::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,.3),transparent);}
+.welcome-container{margin-bottom:30px;padding:20px;background:linear-gradient(135deg,rgba(0,217,255,.08),rgba(16,212,116,.05));border:1px solid rgba(0,217,255,.15);border-radius:var(--r2);position:relative;overflow:hidden;}
+.welcome-container::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,217,255,.3),transparent);}
 .welcome-text{font-size:28px;font-weight:700;letter-spacing:-.5px;color:var(--text);font-family:var(--font);}
-.welcome-username{color:var(--blue);text-shadow:0 0 20px rgba(79,142,247,.3);}
+.welcome-username{color:var(--blue);text-shadow:0 0 20px rgba(0,217,255,.3);}
 
 /* STAT CARDS HOME */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
@@ -222,14 +225,14 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 #snake-canvas{display:block;border-radius:8px;border:1px solid var(--border);width:100%;}
 .snake-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;}
 .snake-btn{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:500;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.snake-btn-play{background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);color:var(--blue);}
-.snake-btn-play:hover{background:rgba(79,142,247,.2);}
+.snake-btn-play{background:var(--blue-glow);border:1px solid rgba(0,217,255,.3);color:var(--blue);}
+.snake-btn-play:hover{background:rgba(0,217,255,.2);}
 .snake-btn-pause{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
 .snake-btn-pause:hover{border-color:var(--amber);color:var(--amber);}
 
 /* ══ RECHERCHE ══ */
 .search-hero{text-align:center;padding:4px 0 28px;}
-.search-hero-icon{width:60px;height:60px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
+.search-hero-icon{width:60px;height:60px;background:var(--blue-glow);border:1px solid rgba(0,217,255,.2);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 0 12px rgba(0,217,255,0.2);}
 .search-hero-title{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
 .search-hero-sub{font-size:13px;color:var(--text2);}
 .mode-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;gap:2px;margin-bottom:24px;}
@@ -250,26 +253,26 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .fi-wrap{position:relative;}
 .fi-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;transition:color .2s;}
 .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px 10px 35px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.form-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(79,142,247,.07);}
+.form-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(0,217,255,.07);}
 .form-input:focus ~ .fi-icon,.fi-wrap:focus-within .fi-icon{color:var(--blue);}
 .form-input::placeholder{color:var(--text3);font-size:12px;}
 .filter-sep{height:1px;background:var(--border);margin:18px 0;}
 .search-tip{display:flex;align-items:flex-start;gap:8px;background:rgba(255,165,2,.05);border:1px solid rgba(255,165,2,.15);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--amber);line-height:1.6;margin-bottom:18px;}
 .btn-search{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:var(--r);color:white;font-size:14px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font);letter-spacing:.3px;}
-.btn-search:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,.3);}
+.btn-search:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,217,255,.3);}
 .search-footer{text-align:center;font-size:11px;color:var(--text3);margin-top:14px;font-family:var(--mono);}
 .search-limit-warning{background:var(--red2);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--red);margin-bottom:16px;display:none;max-width:780px;margin-left:auto;margin-right:auto;}
 .search-limit-warning.show{display:flex;align-items:center;gap:8px;}
 #results-section{display:none;max-width:780px;margin:24px auto 0;}
 .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .results-title{font-size:15px;font-weight:600;}
-.results-count{font-size:11px;font-weight:600;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:6px;padding:3px 10px;color:var(--blue);font-family:var(--mono);}
+.results-count{font-size:11px;font-weight:600;background:var(--blue-glow);border:1px solid rgba(0,217,255,.2);border-radius:6px;padding:3px 10px;color:var(--blue);font-family:var(--mono);}
 .result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s,transform .2s;}
 .result-card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.3);}
 .result-card-top{padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);}
 .result-person{display:flex;align-items:center;gap:12px;}
 .result-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;}
-.ra-blue{background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);color:var(--blue);}
+.ra-blue{background:var(--blue-glow);border:1px solid rgba(0,217,255,.2);color:var(--blue);}
 .ra-red{background:var(--red2);border:1px solid rgba(255,71,87,.2);color:var(--red);}
 .ra-amber{background:rgba(255,165,2,.1);border:1px solid rgba(255,165,2,.2);color:var(--amber);}
 .result-name{font-size:14px;font-weight:600;margin-bottom:4px;}
@@ -309,7 +312,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:50px;}
 .price-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;position:relative;transition:border-color .2s,box-shadow .2s,transform .2s;}
 .price-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3);}
-.price-card.popular{border-color:rgba(79,142,247,.4);box-shadow:0 0 0 1px rgba(79,142,247,.1);}
+.price-card.popular{border-color:rgba(0,217,255,.4);box-shadow:0 0 0 1px rgba(0,217,255,.1);}
 .popular-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:9px;font-weight:700;padding:2px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-family:var(--mono);}
 .price-plan-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:14px;font-family:var(--mono);}
 .price-val{font-size:38px;font-weight:700;letter-spacing:-1px;line-height:1;font-family:var(--mono);}
@@ -326,7 +329,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .price-btn-outline{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
 .price-btn-outline:hover{border-color:var(--blue);color:var(--blue);}
 .price-btn-solid{background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;color:white;}
-.price-btn-solid:hover{box-shadow:0 4px 16px rgba(79,142,247,.35);transform:translateY(-1px);}
+.price-btn-solid:hover{box-shadow:0 4px 16px rgba(0,217,255,.35);transform:translateY(-1px);}
 .why-section{margin-bottom:50px;}
 .why-title{text-align:center;font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
 .why-title span{color:var(--blue);}
@@ -365,10 +368,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .ci-wrap{position:relative;}
 .ci-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;}
 .compte-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px 10px 35px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.compte-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,.07);}
+.compte-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,217,255,.07);}
 .compte-input::placeholder{color:var(--text3);font-size:12px;}
 .btn-compte{padding:10px 20px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:8px;color:white;font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.btn-compte:hover{box-shadow:0 4px 14px rgba(79,142,247,.3);}
+.btn-compte:hover{box-shadow:0 4px 14px rgba(0,217,255,.3);}
 .compte-msg{font-size:12px;padding:10px 13px;border-radius:7px;margin-top:10px;display:none;align-items:center;gap:7px;}
 .compte-msg.show{display:flex;}
 .compte-error{background:var(--red2);border:1px solid rgba(255,71,87,.2);color:var(--red);}
@@ -397,8 +400,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .admin-table tr:last-child td{border:none;}
 .admin-table tr:hover td{background:rgba(255,255,255,.015);color:var(--text);}
 .admin-action-btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;transition:border-color .2s,box-shadow .2s,transform .2s;border:1px solid;margin-right:4px;font-family:var(--font);}
-.btn-edit{border-color:rgba(79,142,247,.3);color:var(--blue);background:var(--blue-glow);}
-.btn-edit:hover{background:rgba(79,142,247,.2);}
+.btn-edit{border-color:rgba(0,217,255,.3);color:var(--blue);background:var(--blue-glow);}
+.btn-edit:hover{background:rgba(0,217,255,.2);}
 .btn-delete{border-color:rgba(255,71,87,.3);color:var(--red);background:var(--red2);}
 .btn-delete:hover{background:rgba(255,71,87,.15);}
 /* Online indicator in table */
@@ -412,8 +415,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .notif-input,.notif-select,.notif-textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .notif-input:focus,.notif-select:focus,.notif-textarea:focus{border-color:var(--blue);}
 .notif-textarea{resize:vertical;min-height:60px;}
-.btn-add-notif{padding:9px 18px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.btn-add-notif:hover{background:rgba(79,142,247,.2);}
+.btn-add-notif{padding:9px 18px;background:var(--blue-glow);border:1px solid rgba(0,217,255,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.btn-add-notif:hover{background:rgba(0,217,255,.2);}
 .notif-list-admin{margin-top:12px;max-height:200px;overflow-y:auto;}
 .notif-admin-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg3);border-radius:7px;margin-bottom:5px;}
 .notif-admin-item-text{font-size:11px;color:var(--text2);}
@@ -430,7 +433,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
 .modal-btn-cancel{padding:8px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
 .modal-btn-cancel:hover{border-color:var(--border2);color:var(--text);}
 .modal-btn-confirm{padding:8px 16px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:8px;font-size:13px;font-weight:600;color:white;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
-.modal-btn-confirm:hover{box-shadow:0 4px 14px rgba(79,142,247,.3);}
+.modal-btn-confirm:hover{box-shadow:0 4px 14px rgba(0,217,255,.3);}
 .modal-field{margin-bottom:13px;}
 .modal-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px;font-family:var(--mono);}
 .modal-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
@@ -570,6 +573,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
     <div class="sb-spacer"></div>
     <div class="sb-divider"></div>
     <div class="sb-section">
+      <div class="sb-item" id="sb-legal" onclick="sideNav(this,'legal')"><span class="sb-item-icon">📋</span>Conditions</div>
+      <div class="sb-item" id="sb-privacy" onclick="sideNav(this,'privacy')"><span class="sb-item-icon">🔒</span>Confidentialité</div>
       <div class="sb-item" onclick="logout()" style="color:var(--red)"><span class="sb-item-icon">🚪</span>Déconnexion</div>
     </div>
   </div>
@@ -623,9 +628,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       </div>
       <div style="text-align:center;">
         <div class="mode-tabs">
-          <button class="mode-tab active" onclick="switchTab(this,'breach')">🔓 Breach</button>
-          <button class="mode-tab" onclick="switchTab(this,'stealer')">🦠 Stealer</button>
-          <button class="mode-tab" onclick="switchTab(this,'osint')">🕵️ OSINT</button>
+          <button class="mode-tab active" onclick="switchTab(this,'breach')">📄 Document</button>
+          <button class="mode-tab" onclick="switchTab(this,'lookup')">🔎 Lookup</button>
         </div>
       </div>
       <div class="search-limit-warning" id="search-limit-warn"></div>
@@ -666,29 +670,23 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
         </div>
       </div>
       
-      <div class="tab-content" id="tab-stealer">
+      <div class="tab-content" id="tab-lookup">
         <div class="search-card">
           <div class="filter-section">
-            <div class="filter-label">Stealer Logs</div>
+            <div class="filter-label">Lookup (Discord, IP, Email, Username)</div>
             <div class="form-group" style="margin-bottom:18px">
-              <label class="form-label">Requête</label>
-              <div class="fi-wrap"><input class="form-input" id="s-stealer-q" placeholder="email, domaine, Discord ID..."><span class="fi-icon">🔍</span></div>
+              <label class="form-label">Chercher par</label>
+              <select class="form-input" id="lookup-type" style="margin-bottom:12px">
+                <option value="auto">🔍 Auto-détection</option>
+                <option value="discord">💬 Discord ID</option>
+                <option value="ip">🌐 Adresse IP</option>
+                <option value="email">✉️ Email</option>
+                <option value="username">👤 Username</option>
+              </select>
+              <div class="fi-wrap"><input class="form-input" id="s-lookup-q" placeholder="Discord ID, IP, email@example.com, username..."><span class="fi-icon">🔎</span></div>
             </div>
           </div>
-          <button class="btn-search ripple-container" onclick="doSearch('stealer')">🦠 Rechercher dans les logs</button>
-        </div>
-      </div>
-      
-      <div class="tab-content" id="tab-osint">
-        <div class="search-card">
-          <div class="filter-section">
-            <div class="filter-label">OSINT Lookup</div>
-            <div class="form-group" style="margin-bottom:18px">
-              <label class="form-label">Identifiant cible</label>
-              <div class="fi-wrap"><input class="form-input" id="s-osint-q" placeholder="Discord ID, Steam ID, email..."><span class="fi-icon">🕵️</span></div>
-            </div>
-          </div>
-          <button class="btn-search ripple-container" onclick="doSearch('osint')">🕵️ Lancer OSINT</button>
+          <button class="btn-search ripple-container" onclick="doSearch('lookup')">🔎 Lancer Lookup</button>
         </div>
       </div>
       <div id="results-section">
@@ -709,10 +707,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
         <span class="billing-lbl" id="lbl-a" onclick="toggleBill()">Annuel (−20%)</span>
       </div>
       <div class="pricing-grid">
-        <div class="price-card"><div class="price-plan-name">Free</div><div class="price-val">0<sup>€</sup></div><div class="price-period">Pour toujours</div><div class="price-annual-note">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>10 recherches / jour</li><li>Breach Search</li><li class="na">Stealer Logs</li><li class="na">OSINT</li><li class="na">Support</li></ul><button class="price-btn price-btn-outline">Plan actuel</button></div>
-        <div class="price-card"><div class="price-plan-name">Starter</div><div class="price-val"><sup>€</sup><span id="starter-price">10</span></div><div class="price-period" id="starter-period">/ mois</div><div class="price-annual-note" id="starter-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>100 recherches / jour</li><li>Breach Search avancé</li><li>Stealer Logs</li><li class="na">OSINT</li><li class="na">Support prioritaire</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Starter')">Activer</button></div>
+        <div class="price-card"><div class="price-plan-name">Free</div><div class="price-val">0<sup>€</sup></div><div class="price-period">Pour toujours</div><div class="price-annual-note">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>10 recherches / jour</li><li>Document Search</li><li class="na">Stealer Logs</li><li class="na">OSINT</li><li class="na">Support</li></ul><button class="price-btn price-btn-outline">Plan actuel</button></div>
+        <div class="price-card"><div class="price-plan-name">Starter</div><div class="price-val"><sup>€</sup><span id="starter-price">10</span></div><div class="price-period" id="starter-period">/ mois</div><div class="price-annual-note" id="starter-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>100 recherches / jour</li><li>Document Search avancé</li><li>Stealer Logs</li><li class="na">OSINT</li><li class="na">Support prioritaire</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Starter')">Activer</button></div>
         <div class="price-card popular"><div class="popular-badge">⚡ Populaire</div><div class="price-plan-name">Pro</div><div class="price-val"><sup>€</sup><span id="pro-price">25</span></div><div class="price-period" id="pro-period">/ mois</div><div class="price-annual-note" id="pro-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>Illimité</li><li>Tous les modules</li><li>OSINT complet</li><li>Accès API</li><li class="na">Support 24/7</li></ul><button class="price-btn price-btn-solid" onclick="openModal('Pro')">Activer Pro</button></div>
-        <div class="price-card"><div class="price-plan-name">Elite</div><div class="price-val"><sup>€</sup><span id="elite-price">80</span></div><div class="price-period" id="elite-period">/ mois</div><div class="price-annual-note" id="elite-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>Tout de Pro</li><li>Support 24/7</li><li>Exports illimités</li><li>Accès bêta</li><li>Manager dédié</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Elite')" style="border-color:rgba(79,142,247,.4);color:var(--blue)">Activer Elite</button></div>
+        <div class="price-card"><div class="price-plan-name">Elite</div><div class="price-val"><sup>€</sup><span id="elite-price">80</span></div><div class="price-period" id="elite-period">/ mois</div><div class="price-annual-note" id="elite-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>Tout de Pro</li><li>Support 24/7</li><li>Exports illimités</li><li>Accès bêta</li><li>Manager dédié</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Elite')" style="border-color:rgba(0,217,255,.4);color:var(--blue)">Activer Elite</button></div>
       </div>
       <div class="why-section">
         <div class="why-title">Pourquoi choisir <span>DarkSearcher</span> ?</div>
@@ -726,6 +724,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       <div class="faq-section">
         <div class="faq-title">Questions <span>fréquentes</span></div>
         <div class="faq-list">
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Pourquoi DarkSearcher ? <span class="faq-arrow">▼</span></div><div class="faq-a">DarkSearcher offre la meilleure couverture de données avec des résultats en temps réel, une interface intuitive et une sécurité maximale. Nos résultats sont mille fois plus complets que la concurrence.</div></div>
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Quels sont les avantages par rapport aux autres ? <span class="faq-arrow">▼</span></div><div class="faq-a">Nous proposons une base de données mise à jour quotidiennement, des recherches multi-critères avancées, un lookup instantané, et une API robuste pour intégrations custom.</div></div>
           <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Comment fonctionne la facturation ? <span class="faq-arrow">▼</span></div><div class="faq-a">Le paiement s'effectue via notre serveur Discord. Contactez un admin sur discord.gg/rfshop.</div></div>
           <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Puis-je changer de plan ? <span class="faq-arrow">▼</span></div><div class="faq-a">Oui, contactez un admin sur Discord. Le changement est immédiat.</div></div>
           <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Y a-t-il une période d'essai ? <span class="faq-arrow">▼</span></div><div class="faq-a">Le plan Free offre 10 recherches/jour en permanence.</div></div>
@@ -796,8 +796,127 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;backgr
       </div>
     </div>
 
-  </div>
-</div>
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: TERMS OF SERVICE                                      -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div id="page-legal" class="page">
+      <div style="max-width:900px;margin:0 auto;">
+        <div style="margin-bottom:32px;">
+          <h1 style="font-size:36px;font-weight:700;margin-bottom:8px;">Conditions d'utilisation</h1>
+          <p style="color:var(--text2);font-size:14px;">Dernière mise à jour: Mars 2026</p>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px;line-height:1.8;color:var(--text);">
+          
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">1. Acceptation des conditions</h2>
+          <p>En accédant et en utilisant DarkSearcher, vous acceptez de respecter ces conditions d'utilisation. Si vous ne les acceptez pas, veuillez cesser l'utilisation du service immédiatement.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">2. Description du service</h2>
+          <p>DarkSearcher est une plateforme de recherche d'intelligence permettant de:</p>
+          <ul style="margin-left:20px;margin:12px 0;">
+            <li>Rechercher dans notre base de données</li>
+            <li>Effectuer des lookups (Discord ID, Email, IP, Username)</li>
+            <li>Exporter et analyser les résultats</li>
+          </ul>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">3. Restrictions d'utilisation</h2>
+          <p>Vous acceptez de ne pas utiliser DarkSearcher pour:</p>
+          <ul style="margin-left:20px;margin:12px 0;">
+            <li>Activités illégales ou frauduleuses</li>
+            <li>Harcèlement, menaces ou intimidation</li>
+            <li>Violation de la vie privée d'autrui</li>
+            <li>Spam, phishing ou malware</li>
+            <li>Accès non autorisé à des systèmes</li>
+          </ul>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">4. Plans d'abonnement</h2>
+          <p>DarkSearcher propose plusieurs plans (Free, Starter, Pro, Elite) avec différentes limites et fonctionnalités. Les tarifs peuvent être modifiés à tout moment avec préavis.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">5. Facturation et paiement</h2>
+          <p>Le paiement s'effectue via Discord. Les abonnements se renouvellent automatiquement. Vous pouvez annuler à tout moment en contactant un administrateur.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">6. Propriété intellectuelle</h2>
+          <p>Tous les contenus, logos, et données de DarkSearcher sont protégés par les droits d'auteur. Vous n'avez pas le droit de reproduire ou distribuer le service sans permission.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">7. Limitation de responsabilité</h2>
+          <p>DarkSearcher est fourni "tel quel". Nous ne garantissons pas l'exactitude ou la complétude des données. Vous utilisez le service à vos propres risques.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">8. RGPD et données personnelles</h2>
+          <p>Nous respectons le RGPD et protégeons vos données personnelles. Pour plus d'informations, consultez notre politique de confidentialité.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">9. Modifications du service</h2>
+          <p>Nous nous réservons le droit de modifier ou d'arrêter le service à tout moment, avec ou sans préavis.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">10. Contact</h2>
+          <p>Pour toute question concernant ces conditions, contactez-nous via Discord: <strong style="color:var(--accent);">discord.gg/rfshop</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: PRIVACY POLICY                                         -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div id="page-privacy" class="page">
+      <div style="max-width:900px;margin:0 auto;">
+        <div style="margin-bottom:32px;">
+          <h1 style="font-size:36px;font-weight:700;margin-bottom:8px;">Politique de confidentialité</h1>
+          <p style="color:var(--text2);font-size:14px;">Dernière mise à jour: Mars 2026</p>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px;line-height:1.8;color:var(--text);">
+          
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">1. Données collectées</h2>
+          <p>DarkSearcher collecte les données suivantes:</p>
+          <ul style="margin-left:20px;margin:12px 0;">
+            <li><strong>Compte</strong>: nom d'utilisateur, email, mot de passe (hashé)</li>
+            <li><strong>Usage</strong>: historique des recherches, IP, horodatage</li>
+            <li><strong>Paiement</strong>: informations d'abonnement, plan actif</li>
+            <li><strong>Notifications</strong>: préférences de notification</li>
+          </ul>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">2. Sécurité des données</h2>
+          <p>Vos données sont protégées par chiffrement TLS 1.3 en transit et au repos. Nous utilisons des mots de passe hashés et des tokens sécurisés. Aucune donnée sensible n'est stockée en clair.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">3. Utilisation des données</h2>
+          <p>Vos données sont utilisées pour:</p>
+          <ul style="margin-left:20px;margin:12px 0;">
+            <li>Fournir et améliorer le service</li>
+            <li>Gérer votre compte et abonnement</li>
+            <li>Envoyer des notifications pertinentes</li>
+            <li>Analyser l'usage (statistiques anonymes)</li>
+            <li>Respecter les obligations légales</li>
+          </ul>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">4. Partage des données</h2>
+          <p>Nous ne vendons jamais vos données. Elles ne sont partagées qu'avec les services essentiels à l'exploitation (Firebase, paiement Discord). Aucun tiers marketing n'a accès à vos informations.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">5. Rétention des données</h2>
+          <p>Les données de compte sont conservées tant que vous avez un compte actif. Après suppression, les données sont purgées après 90 jours. Les logs d'audit sont conservés 30 jours.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">6. Droits RGPD</h2>
+          <p>Vous avez le droit de:</p>
+          <ul style="margin-left:20px;margin:12px 0;">
+            <li>Accéder à vos données personnelles</li>
+            <li>Rectifier des informations inexactes</li>
+            <li>Demander la suppression de vos données</li>
+            <li>Obtenir une copie de vos données (portabilité)</li>
+            <li>Retirer votre consentement à tout moment</li>
+          </ul>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">7. Cookies</h2>
+          <p>DarkSearcher utilise des cookies de session (localStorage) pour maintenir votre connexion. Aucun cookie de suivi tiers n'est utilisé.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">8. Tiers externes</h2>
+          <p>Nous utilisons Firebase pour l'hébergement et Discord pour les paiements. Consultez leurs politiques respectives pour plus d'informations.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">9. Modifications</h2>
+          <p>Cette politique peut être modifiée à tout moment. Les modifications importantes seront communiquées par email.</p>
+
+          <h2 style="font-size:18px;font-weight:700;margin:24px 0 12px;color:var(--accent);">10. Contact</h2>
+          <p>Pour toute question sur vos données personnelles, contactez-nous: <strong style="color:var(--accent);">discord.gg/rfshop</strong></p>
+        </div>
+      </div>
+    </div>
 
 
 <div class="modal-overlay" id="plan-modal">
@@ -932,6 +1051,8 @@ function doRegister(){
   err.classList.remove('show');
   if(!username||!email||!pass||!pass2)return regErr('Remplissez tous les champs.');
   if(username.length<3)return regErr('Identifiant trop court (min. 3).');
+  // ✅ VALIDATION EMAIL STRICTE
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return regErr('Email invalide.');
   if(pass.length<6)return regErr('Mot de passe trop court (min. 6).');
   if(pass!==pass2)return regErr('Les mots de passe ne correspondent pas.');
   const users=getUsers();
@@ -1190,16 +1311,16 @@ async function doSearch(mode){
   if(mode==='breach'){
     const get=id=>(document.getElementById(id)?.value||'').trim();
     const email=get('s-email'),tel=get('s-telephone'),nom=get('s-nom'),prenom=get('s-prenom');
-    const username=get('s-username'),ip=get('s-ip'),domaine=get('s-domaine');
+    const adresse=get('s-adresse'),username=get('s-username'),ip=get('s-ip'),domaine=get('s-domaine');
     const ville=get('s-ville'),dept=get('s-departement'),pays=get('s-pays');
     query=email||tel||username||ip||domaine;
     if(!query&&(prenom||nom))query=[prenom,nom].filter(Boolean).join(' ');
-    if(!query)query=ville||dept||pays;
-    filters={nom,prenom,ville,dept,pays,tel,ip};
-  }else if(mode==='stealer'){
-    query=(document.getElementById('s-stealer-q')?.value||'').trim();
+    if(!query)query=ville||dept||pays||adresse;
+    filters={nom,prenom,ville,dept,pays,tel,ip,adresse};
+  }else if(mode==='lookup'){
+    query=(document.getElementById('s-lookup-q')?.value||'').trim();
   }else{
-    query=(document.getElementById('s-osint-q')?.value||'').trim();
+    query=(document.getElementById('s-stealer-q')?.value||'').trim();
   }
   if(!query){alert('Veuillez renseigner au moins un critère.');return;}
   document.getElementById('search-limit-warn').classList.remove('show');
@@ -1210,33 +1331,113 @@ async function doSearch(mode){
   account.searches=(account.searches||0)+1;
   users[sess.username]=account;saveUsers(users);setSession(account);updateSearchDisplay(account);
   try{
-    const r=await fetch(_dw()+'?q='+encodeURIComponent(query)+'&action='+mode,{
-      headers:{'Accept':'application/json'},signal:AbortSignal.timeout(60000)
-    });
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    if(!data.success)throw new Error(data.error||'Erreur API');
-    
-    if(mode==='breach'){
-      let results=data.data?.breach?.data?.results||[];
-      if(results.length>0){
-        results=results.filter(rec=>{
-          const s=JSON.stringify(rec).toLowerCase();
-          if(filters.nom&&!s.includes(filters.nom.toLowerCase()))return false;
-          if(filters.prenom&&!s.includes(filters.prenom.toLowerCase()))return false;
-          if(filters.ville&&!s.includes(filters.ville.toLowerCase()))return false;
-          if(filters.dept&&!s.includes(filters.dept.toLowerCase()))return false;
-          if(filters.pays&&!s.includes(filters.pays.toLowerCase()))return false;
-          if(filters.tel&&!s.includes(filters.tel.toLowerCase()))return false;
-          if(filters.ip&&!s.includes(filters.ip.toLowerCase()))return false;
-          return true;
-        });
-        data.data.breach.data.results=results;
+    if(mode==='lookup'){
+      // ✅ LOOKUP WITH OPEN SOURCE APIS
+      await doLookup(query,lst);
+    }else{
+      // BREACH SEARCH
+      const queryParams=new URLSearchParams();
+      queryParams.append('q',query);
+      queryParams.append('action',mode);
+      if(filters.prenom)queryParams.append('prenom',filters.prenom);
+      if(filters.nom)queryParams.append('nom',filters.nom);
+      if(filters.tel)queryParams.append('telephone',filters.tel);
+      if(filters.adresse)queryParams.append('adresse',filters.adresse);
+      if(filters.ville)queryParams.append('ville',filters.ville);
+      if(filters.dept)queryParams.append('departement',filters.dept);
+      
+      const r=await fetch(_dw()+'?'+queryParams.toString(),{
+        headers:{'Accept':'application/json'},signal:AbortSignal.timeout(60000)
+      });
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const data=await r.json();
+      if(!data.success)throw new Error(data.error||'Erreur API');
+      
+      if(mode==='breach'){
+        let results=data.data?.breach?.data?.results||[];
+        if(results.length>0){
+          results=results.filter(rec=>{
+            const s=JSON.stringify(rec).toLowerCase();
+            if(filters.nom&&!s.includes(filters.nom.toLowerCase()))return false;
+            if(filters.prenom&&!s.includes(filters.prenom.toLowerCase()))return false;
+            if(filters.ville&&!s.includes(filters.ville.toLowerCase()))return false;
+            if(filters.dept&&!s.includes(filters.dept.toLowerCase()))return false;
+            if(filters.pays&&!s.includes(filters.pays.toLowerCase()))return false;
+            if(filters.tel&&!s.includes(filters.tel.toLowerCase()))return false;
+            if(filters.ip&&!s.includes(filters.ip.toLowerCase()))return false;
+            if(filters.adresse&&!s.includes(filters.adresse.toLowerCase()))return false;
+            return true;
+          });
+          data.data.breach.data.results=results;
+        }
+      }
+      renderResults(data.data,mode,query,lst);
+    }
+  }catch(e){
+    lst.innerHTML='<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red)">'+e.message+'</div><button onclick="doSearch(\''+mode+'\')" style="margin-top:14px;padding:9px 20px;background:var(--blue-glow);border:1px solid rgba(0,217,255,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600">🔄 Réessayer</button></div>';
+  }
+}
+
+// ✅ LOOKUP WITH OPEN SOURCE APIS
+async function doLookup(query,lst){
+  let results=[];
+  
+  // Auto-detect type
+  const isDiscordID=/^\d{15,21}$/.test(query);
+  const isIP=/^(\d{1,3}\.){3}\d{1,3}$/.test(query);
+  const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
+  
+  try{
+    if(isDiscordID){
+      // Discord User API (open)
+      const res=await fetch('https://discordapp.com/api/v9/users/'+query,{signal:AbortSignal.timeout(5000)}).catch(()=>({ok:false}));
+      if(res.ok){
+        const data=await res.json();
+        results.push({type:'Discord User',username:data.username,id:data.id,avatar:data.avatar,email:data.email||'N/A'});
+      }else{
+        results.push({type:'Discord',query:query,status:'Non trouvé'});
       }
     }
-    renderResults(data.data,mode,query,lst);
+    
+    if(isIP){
+      // IP Geolocation (ipapi.co - free)
+      const res=await fetch('https://ipapi.co/'+query+'/json/',{signal:AbortSignal.timeout(5000)});
+      if(res.ok){
+        const data=await res.json();
+        results.push({type:'IP Geolocation',ip:data.ip,city:data.city,country:data.country_name,org:data.org,isp:data.org});
+      }
+    }
+    
+    if(isEmail){
+      // Email validation + simple lookup
+      results.push({type:'Email',address:query,status:'Valide',domain:query.split('@')[1]});
+    }
+    
+    if(!isDiscordID&&!isIP&&!isEmail){
+      // Username/generic search
+      results.push({type:'Username',query:query,status:'Recherche générique'});
+    }
+    
+    if(!results.length){
+      lst.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat pour: '+query+'</div></div>';
+      return;
+    }
+    
+    document.getElementById('results-count').textContent=results.length+' résultat'+(results.length>1?'s':'');
+    const f=(l,v)=>v?'<div class="result-field"><div class="result-field-label">'+l+'</div><div class="result-field-value">'+String(v)+'</div></div>':'';
+    lst.innerHTML=results.map((rec,i)=>{
+      const fields=Object.entries(rec).map(([k,v])=>f(k.toUpperCase(),v)).filter(Boolean).join('');
+      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">🔎</div><div><div class="result-name">'+rec.type+'</div><div class="result-badges"><span class="rbadge rbadge-lookup">LOOKUP</span></div></div></div></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+    }).join('');
+    
+    // Notification
+    const notifs=getNotifications();
+    notifs.push({id:Date.now().toString(),type:'lookup',title:'Lookup effectué',body:results.length+' résultat(s) pour: '+query,date:new Date().toLocaleTimeString('fr-FR'),read:false});
+    saveNotifications(notifs);
+    renderNotifPanel();
   }catch(e){
-    lst.innerHTML='<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red)">'+e.message+'</div><button onclick="doSearch(\''+mode+'\')" style="margin-top:14px;padding:9px 20px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600">🔄 Réessayer</button></div>';
+    results.push({error:e.message});
+    lst.innerHTML='<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title">Erreur: '+e.message+'</div></div>';
   }
 }
 
@@ -1253,6 +1454,11 @@ function renderResults(data,mode,query,lst){
       const fields=Object.entries(rec).map(([k,v])=>f(labels[k]||k.toUpperCase(),v,k==='email'||k==='username')).join('');
       return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">'+nm[0].toUpperCase()+'</div><div><div class="result-name">'+nm+'</div><div class="result-badges"><span class="rbadge rbadge-breach">Breach</span>'+(src?'<span class="rbadge rbadge-source">'+src+'</span>':'')+'</div></div></div><span class="result-status status-breach">LEAK</span></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
     }).join('');
+    // ✅ NOTIFICATION DE RECHERCHE
+    const notifs=getNotifications();
+    notifs.push({id:Date.now().toString(),type:'search',title:'Recherche effectuée',body:results.length+' résultat(s) trouvé(s) pour: '+query,date:new Date().toLocaleTimeString('fr-FR'),read:false});
+    saveNotifications(notifs);
+    renderNotifPanel();
   }else if(mode==='stealer'){
     const results=data.stealer?.data?.results||data.stealer?.results||[];
     document.getElementById('results-count').textContent=results.length+' résultat'+(results.length>1?'s':'');
@@ -1527,6 +1733,72 @@ document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='
   }
 })();
 
+// ✅ AUTO-LOGIN SI SESSION EXISTE
+document.addEventListener('DOMContentLoaded',()=>{
+  const sess=getSession();
+  if(sess){
+    const users=getUsers();
+    const account=users[sess.username];
+    if(account&&account.status!=='banni'){
+      setTimeout(()=>{
+        document.getElementById('verification-page').classList.remove('show');
+        enterApp(account);
+      },1500);
+      return;
+    }else{
+      localStorage.removeItem('ds_session');
+    }
+  }
+  setTimeout(()=>{
+    document.getElementById('verification-page').classList.remove('show');
+    document.getElementById('login-page').classList.add('show');
+  },1500);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANTI-DEV TOOLS (DISCRET)
+// ═══════════════════════════════════════════════════════════════════════════
+(function(){
+  let devtoolsOpen=false;
+  
+  // Bloquer les raccourcis clavier
+  document.addEventListener('keydown',function(e){
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&e.key==='I')||(e.ctrlKey&&e.shiftKey&&e.key==='J')||(e.ctrlKey&&e.shiftKey&&e.key==='C')||(e.ctrlKey&&e.shiftKey&&e.key==='K')){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  },true);
+  
+  // Bloquer le right-click discètement
+  document.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+    return false;
+  },true);
+  
+  // Détecter DevTools par la taille de la fenêtre
+  const detectDevTools=()=>{
+    const w=window.outerWidth-window.innerWidth;
+    const h=window.outerHeight-window.innerHeight;
+    if((w>120||h>120)&&!devtoolsOpen){
+      devtoolsOpen=true;
+      document.body.innerHTML='';
+      window.location.href='about:blank';
+    }
+  };
+  setInterval(detectDevTools,1000);
+  
+  // Bloquer les outils de développement via des propriétés
+  Object.defineProperty(window,'devtools',{get:function(){devtoolsOpen=true;return{};}});
+  
+  // Désactiver console discrètement
+  const noop=function(){};
+  window.console.log=noop;
+  window.console.error=noop;
+  window.console.warn=noop;
+  window.console.info=noop;
+  window.console.debug=noop;
+})();
 
 window.addEventListener('load', function(){
   function loadScript(src, cb){
