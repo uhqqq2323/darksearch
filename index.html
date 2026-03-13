@@ -3,1281 +3,923 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>DarkSearcher</title>
-<link href="https://fonts.googleapis.com/css2?family=Sohne:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<title>DarkSearcher — Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#050609;
-  --surface:#0f1117;
-  --surface2:#16202c;
-  --border:#22333f;
-  --text:#e5e7eb;
-  --muted:#9ca3af;
-  --accent:#5ba3ff;
-  --accent-dark:#3d6ee8;
-  --success:#10b981;
-  --error:#ef4444;
-  --warning:#f59e0b;
+  --bg:#0a0c10;--bg2:#0f121a;--bg3:#151a25;--bg4:#1b2535;--bg5:#212a3a;
+  --border:#1f2945;--border2:#2a3a55;
+  --text:#e8eef8;--text2:#7e8fa8;--text3:#4a5565;
+  --blue:#5ba3ff;--blue2:#4590f0;--blue-glow:rgba(91,163,255,0.18);
+  --green:#1ae88a;--green2:rgba(26,232,138,0.12);
+  --red:#ff5a6e;--red2:rgba(255,90,110,0.12);
+  --amber:#ffb726;--purple:#c77dff;
+  --sidebar-w:240px;--topbar-h:56px;
+  --r:16px;--r2:20px;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 html{scroll-behavior:smooth;}
-body{
-  font-family:'Sohne',system-ui,-apple-system,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  line-height:1.5;
-}
-a{color:var(--accent);text-decoration:none;}
-a:hover{opacity:0.8;}
-input,button,select,textarea{font-family:inherit;font-size:inherit;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+*{cursor:crosshair !important;}
 
-::-webkit-scrollbar{width:6px;}
+/* ══ CURSEUR CUSTOM ══ */
+#cursor{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+#cursor::before{content:'';position:absolute;left:50%;top:-10px;transform:translateX(-50%);width:1.5px;height:20px;background:var(--blue);border-radius:1px;transition:background .15s,height .15s;}
+#cursor::after{content:'';position:absolute;top:50%;left:-10px;transform:translateY(-50%);height:1.5px;width:20px;background:var(--blue);border-radius:1px;transition:background .15s,width .15s;}
+#cursor-ring{position:fixed;width:28px;height:28px;border:1px solid rgba(79,142,247,0.4);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .12s ease;}
+#cursor.click::before,#cursor.click::after{background:white;}
+#cursor-ring.click{width:18px;height:18px;}
+#cursor.hover::before,#cursor.hover::after{background:var(--green);}
+#cursor-ring.hover{width:38px;height:38px;border-color:rgba(16,212,116,0.5);}
+
+/* ══ SCROLLBAR ══ */
+::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px;}
 
-/* LAYOUT */
+/* ══ ANIMATIONS ══ */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes blink{0%,100%{opacity:1}49%{opacity:1}50%{opacity:0}}
+@keyframes notifIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes matrixRain{0%{transform:translateY(-100%);opacity:1}100%{transform:translateY(100vh);opacity:0}}
+
+/* ══ SCANLINE EFFECT ══ */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(transparent,rgba(79,142,247,0.06),transparent);display:none;pointer-events:none;z-index:1;}
+
+
+/* ══ AUTH ══ */
 .auth-page{display:none;position:fixed;inset:0;z-index:800;align-items:center;justify-content:center;background:var(--bg);}
-.auth-page.show{display:flex;animation:fadeIn 0.3s ease;}
-.auth-wrap{width:100%;max-width:420px;padding:20px;}
-.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:0 25px 50px rgba(0,0,0,0.5);}
-.auth-header{margin-bottom:32px;}
-.auth-icon{font-size:40px;margin-bottom:16px;}
-.auth-title{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;}
-.auth-desc{font-size:13px;color:var(--muted);}
-.input-group{margin-bottom:16px;}
-.input-label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:0.05em;}
-.input-field{position:relative;}
-.input-field input{
-  width:100%;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:11px 14px;
-  color:var(--text);
-  font-size:14px;
-  outline:none;
-  transition:all 0.2s;
-}
-.input-field input:focus{
-  border-color:var(--accent);
-  background:rgba(91,163,255,0.03);
-  box-shadow:0 0 0 2px rgba(91,163,255,0.1);
-}
-.input-field input::placeholder{color:var(--muted);}
-.input-error{
-  font-size:12px;
-  color:var(--error);
-  margin-top:4px;
-  display:none;
-}
-.input-error.show{display:block;}
-.input-hint{font-size:11px;color:var(--muted);margin-top:4px;}
-.btn{
-  width:100%;
-  padding:12px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
-  border:none;
-  border-radius:10px;
-  color:white;
-  font-size:14px;
-  font-weight:600;
-  cursor:pointer;
-  transition:all 0.2s;
-  letter-spacing:0.02em;
-}
-.btn:hover{opacity:0.9;transform:translateY(-1px);}
-.btn:active{transform:scale(0.98);}
-.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text);}
-.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
-.auth-footer{margin-top:20px;text-align:center;font-size:13px;color:var(--muted);}
-.auth-footer a{color:var(--accent);font-weight:600;}
+.auth-page.show{display:flex;animation:fadeIn .4s ease;}
+.auth-wrap{width:100%;max-width:420px;padding:24px;position:relative;}
+/* Matrix bg sur auth */
+.auth-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(79,142,247,0.08) 0%,transparent 70%);pointer-events:none;}
+.auth-box{background:rgba(14,17,23,0.95);border:1px solid var(--border2);border-radius:var(--r2);padding:40px 36px;box-shadow:0 0 60px rgba(0,0,0,0.6),0 0 0 1px rgba(79,142,247,0.05);animation:scaleIn .35s ease;backdrop-filter:blur(20px);position:relative;}
+.auth-box::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.4),transparent);}
+.auth-logo-wrap{text-align:center;margin-bottom:32px;}
+.auth-logo-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--blue-glow),rgba(79,142,247,0.05));border:1px solid rgba(79,142,247,0.25);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
+.auth-logo-text{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.5px;}
+.auth-logo-text span{color:var(--blue);}
+.auth-logo-sub{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+.auth-error{background:var(--red2);border:1px solid rgba(255,71,87,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px;display:none;align-items:center;gap:8px;}
+.auth-error.show{display:flex;animation:slideDown .2s;}
+.auth-field{margin-bottom:14px;}
+.auth-label{display:block;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;font-family:var(--mono);}
+.auth-input-wrap{position:relative;}
+.auth-input-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;transition:color .2s;}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px 11px 40px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.auth-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(79,142,247,0.08),0 0 16px rgba(79,142,247,0.05);}
+.auth-input:focus + .auth-input-icon, .auth-input-wrap:focus-within .auth-input-icon{color:var(--blue);}
+.auth-input::placeholder{color:var(--text3);font-size:12px;}
+.pass-strength-bar{height:2px;background:var(--bg4);border-radius:2px;margin-top:6px;overflow:hidden;}
+.pass-strength-fill{height:100%;width:0;border-radius:2px;transition:all .3s;}
+.auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:var(--r);color:white;font-size:14px;font-weight:600;cursor:none;transition:border-color .2s,box-shadow .2s,transform .2s;margin-top:8px;position:relative;overflow:hidden;font-family:var(--font);letter-spacing:.3px;}
+.auth-btn::after{content:'';position:absolute;width:100%;height:100%;top:0;left:0;background:linear-gradient(135deg,rgba(255,255,255,0.08),transparent);pointer-events:none;}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,0.35);}
+.auth-btn:active{transform:scale(.99);}
+.auth-attempts{text-align:center;font-size:11px;color:var(--text3);margin-top:8px;font-family:var(--mono);}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--text2);}
+.auth-switch a{color:var(--blue);font-weight:600;}
+.auth-switch a:hover{text-decoration:underline;}
+.auth-reset{text-align:center;margin-top:10px;}
+.auth-reset a{font-size:10px;color:var(--text3);opacity:.5;font-family:var(--mono);}
+.auth-reset a:hover{opacity:1;color:var(--red);}
 
-/* APP LAYOUT */
-#app{display:none;}
-.topbar{
-  position:fixed;top:0;left:0;right:0;
-  height:60px;
-  background:rgba(5,6,9,0.8);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  align-items:center;
-  padding:0 24px;
-  z-index:300;
-  gap:24px;
-}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
-.logo span{color:var(--accent);}
-.topbar-spacer{flex:1;}
-.status-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
-.online-indicator{width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);}
-.topbar-actions{display:flex;align-items:center;gap:8px;}
-.icon-btn{
-  width:40px;height:40px;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:10px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:16px;
-  transition:all 0.2s;
-}
-.icon-btn:hover{border-color:var(--accent);}
-.logout-btn{padding:8px 16px;font-size:12px;font-weight:600;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;transition:all 0.2s;}
-.logout-btn:hover{border-color:var(--error);color:var(--error);}
+/* ══ APP ══ */
+#app{display:none;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:rgba(8,10,14,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(24px);display:flex;align-items:center;padding:0 20px 0 0;z-index:300;}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,0.3),transparent);}
+.topbar-brand{width:var(--sidebar-w);display:flex;align-items:center;padding:0 20px;gap:10px;flex-shrink:0;}
+.topbar-logo-icon{width:32px;height:32px;background:var(--blue-glow);border:1px solid rgba(79,142,247,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.topbar-logo-text{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.topbar-logo-text span{color:var(--blue);}
+.topbar-center{flex:1;display:flex;align-items:center;justify-content:center;gap:20px;}
+.online-badge{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);font-family:var(--mono);}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(16,212,116,0.6);animation:pulse 4s infinite;}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.tb-btn{width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;transition:border-color .2s,box-shadow .2s,transform .2s;font-size:15px;color:var(--text2);position:relative;}
+.tb-btn:hover{background:var(--bg4);border-color:var(--border2);color:var(--text);}
+.notif-badge{position:absolute;top:-5px;right:-5px;width:17px;height:17px;background:var(--red);border-radius:50%;font-size:9px;color:white;display:none;align-items:center;justify-content:center;font-weight:700;border:2px solid var(--bg);font-family:var(--mono);}
+.notif-badge.show{display:flex;}
+.tb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;border:2px solid rgba(79,142,247,0.3);}
+.tb-logout{padding:7px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;color:var(--text2);transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.tb-logout:hover{border-color:var(--red);color:var(--red);background:var(--red2);}
+
+/* NOTIF PANEL */
+.notif-panel{position:fixed;top:64px;right:16px;width:330px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);z-index:400;display:none;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.notif-panel.show{display:block;animation:notifIn .2s ease;}
+.notif-panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.notif-panel-title{font-size:13px;font-weight:600;}
+.notif-mark-read{font-size:11px;color:var(--blue);background:none;border:none;font-weight:500;font-family:var(--font);}
+.notif-mark-read:hover{text-decoration:underline;}
+.notif-list{max-height:360px;overflow-y:auto;}
+.notif-item{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s;position:relative;}
+.notif-item:last-child{border:none;}
+.notif-item:hover{background:rgba(255,255,255,.02);}
+.notif-item.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--blue);}
+.ni-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;font-family:var(--mono);}
+.type-update{color:var(--green)}.type-info{color:var(--blue)}.type-alert{color:var(--amber)}.type-urgent{color:var(--red)}
+.ni-title{font-size:13px;font-weight:500;margin-bottom:3px;}
+.ni-body{font-size:11px;color:var(--text2);line-height:1.5;}
+.ni-date{font-size:10px;color:var(--text3);margin-top:5px;font-family:var(--mono);}
+.notif-empty{padding:32px;text-align:center;font-size:12px;color:var(--text3);}
 
 /* SIDEBAR */
-.sidebar{
-  position:fixed;top:60px;left:0;
-  width:240px;
-  height:calc(100vh - 60px);
-  background:var(--surface);
-  border-right:1px solid var(--border);
-  overflow-y:auto;
-  z-index:200;
-  padding:20px 0;
-}
-.sidebar-section{padding:0 12px;margin-bottom:16px;}
-.sidebar-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;padding:8px 8px 12px;}
-.sidebar-item{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius:10px;
-  font-size:13px;
-  color:var(--muted);
-  cursor:pointer;
-  transition:all 0.2s;
-}
-.sidebar-item:hover{background:var(--surface2);color:var(--text);}
-.sidebar-item.active{background:rgba(91,163,255,0.15);color:var(--accent);}
-.sidebar-icon{font-size:16px;}
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;z-index:200;display:flex;flex-direction:column;padding:16px 0 20px;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-user{padding:16px 16px 18px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.sb-user-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.sb-user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;flex-shrink:0;border:2px solid rgba(79,142,247,0.2);}
+.sb-user-name{font-size:13px;font-weight:600;color:var(--text);}
+.sb-user-tag{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.sb-plan-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono);}
+.plan-free{background:rgba(61,69,88,.3);color:var(--text3);}
+.plan-starter{background:rgba(0,229,255,.1);color:#00e5ff;}
+.plan-pro{background:rgba(255,165,2,.12);color:var(--amber);}
+.plan-elite{background:rgba(79,142,247,.12);color:var(--blue);}
+.plan-admin{background:rgba(255,71,87,.12);color:var(--red);}
+/* Stat mini dans sidebar */
+.sb-mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.sb-mini-stat{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;text-align:center;}
+.sb-mini-stat-num{font-size:15px;font-weight:700;color:var(--text);font-family:var(--mono);}
+.sb-mini-stat-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.sb-section{padding:0 10px;margin-bottom:4px;}
+.sb-section-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:8px 6px 4px;font-family:var(--mono);}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;transition:background .18s,color .18s;font-size:13px;font-weight:500;color:var(--text2);position:relative;overflow:hidden;}
+.sb-item:hover{background:var(--bg3);color:var(--text);}
+.sb-item.active{background:var(--bg4);color:var(--blue);}
+.sb-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:18px;background:var(--blue);border-radius:0 2px 2px 0;}
+.sb-item-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0;}
+.sb-item-badge{margin-left:auto;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:var(--mono);}
+.badge-admin{background:var(--red2);color:var(--red);}
+.sb-divider{height:1px;background:var(--border);margin:8px 10px;}
+.sb-spacer{flex:1;}
 
 /* MAIN */
-.main{
-  margin-left:240px;
-  margin-top:60px;
-  min-height:calc(100vh - 60px);
-  padding:32px;
-}
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:28px;}
 .page{display:none;}
-.page.active{display:block;animation:fadeIn 0.3s ease;}
-.page-header{margin-bottom:32px;}
-.page-title{font-size:32px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;}
-.page-subtitle{font-size:14px;color:var(--muted);}
+.page.active{display:block;}
+
+/* BREADCRUMB */
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);margin-bottom:24px;font-family:var(--mono);}
+.breadcrumb-sep{color:var(--text3);}
+.breadcrumb-current{color:var(--text2);}
+
+/* PAGE HEADER */
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px;}
+.page-subtitle{font-size:13px;color:var(--text2);margin-bottom:24px;}
+
+/* STATUS BAR */
+.status-bar{display:inline-flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:11px;color:var(--text2);margin-bottom:24px;font-family:var(--mono);}
+.status-sep{color:var(--border2);}
 
 /* CARDS */
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:24px;
-  margin-bottom:16px;
-}
-.card-title{font-size:14px;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);}
 
-/* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-.stat{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:20px;
-}
-.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
-.stat-value{font-size:28px;font-weight:700;font-family:'Courier Prime',monospace;}
+/* WELCOME MESSAGE */
+.welcome-container{margin-bottom:30px;padding:20px;background:linear-gradient(135deg,rgba(79,142,247,.08),rgba(16,212,116,.05));border:1px solid rgba(79,142,247,.15);border-radius:var(--r2);position:relative;overflow:hidden;}
+.welcome-container::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,142,247,.3),transparent);}
+.welcome-text{font-size:28px;font-weight:700;letter-spacing:-.5px;color:var(--text);font-family:var(--font);}
+.welcome-username{color:var(--blue);text-shadow:0 0 20px rgba(79,142,247,.3);}
 
-/* SEARCH */
-.search-container{max-width:800px;margin:0 auto;}
-.search-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
-.form-grid-3{grid-template-columns:1fr 1fr 1fr;}
-.form-group{display:flex;flex-direction:column;}
-.form-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}
-.form-input{
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:10px 12px;
-  color:var(--text);
-  font-size:13px;
-  outline:none;
-  transition:all 0.2s;
-}
-.form-input:focus{border-color:var(--accent);background:rgba(91,163,255,0.03);}
-.form-input::placeholder{color:var(--muted);}
+/* STAT CARDS HOME */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;overflow:hidden;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;filter:blur(30px);opacity:.4;}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.purple::before{background:var(--purple);}
+.stat-icon{font-size:20px;margin-bottom:14px;display:block;}
+.stat-num{font-size:26px;font-weight:700;letter-spacing:-.5px;font-family:var(--mono);line-height:1;}
+.stat-label{font-size:11px;color:var(--text2);margin-top:6px;}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 
-/* RESULTS */
-.results-section{display:none;margin-top:24px;}
-.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.results-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
-.results-count{
-  display:inline-block;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:4px 10px;
-  font-size:11px;
-  color:var(--muted);
-  font-family:'Courier Prime',monospace;
-}
-.result-item{
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:16px;
-  margin-bottom:12px;
-}
-.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.result-title{font-weight:600;font-size:13px;}
-.result-badge{
-  display:inline-block;
-  background:rgba(91,163,255,0.15);
-  border:1px solid rgba(91,163,255,0.3);
-  border-radius:6px;
-  padding:2px 8px;
-  font-size:10px;
-  color:var(--accent);
-  text-transform:uppercase;
-  font-weight:600;
-}
-.result-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;}
-.result-field{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:8px;
-  font-size:11px;
-}
-.result-field-label{color:var(--muted);font-weight:600;margin-bottom:4px;}
-.result-field-value{color:var(--text);word-break:break-word;font-family:'Courier Prime',monospace;font-size:10px;}
+/* DISCORD CARD */
+.discord-card{background:linear-gradient(135deg,rgba(88,101,242,.08),var(--bg2));border:1px solid rgba(88,101,242,.2);border-radius:var(--r2);padding:24px;}
+.dc-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.25);border-radius:6px;padding:3px 10px;font-size:9px;font-weight:700;color:#7289da;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;font-family:var(--mono);}
+.dc-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.dc-sub{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:18px;}
+.dc-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.3);border-radius:8px;color:#7289da;font-size:13px;font-weight:500;text-decoration:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.dc-btn:hover{background:rgba(88,101,242,.25);}
 
-/* TABLES */
-.table{width:100%;border-collapse:collapse;font-size:13px;}
-.table th{
-  text-align:left;
-  padding:12px;
-  border-bottom:1px solid var(--border);
-  font-weight:600;
-  font-size:11px;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:0.05em;
-}
-.table td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.02);}
-.table tr:hover td{background:rgba(91,163,255,0.03);}
+/* SNAKE */
+.snake-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px;}
+.snake-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.snake-title{font-size:13px;font-weight:600;}
+.snake-scores{display:flex;gap:16px;}
+.snake-score-item{text-align:center;}
+.snake-score-label{font-size:9px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+.snake-score-val{font-size:18px;font-weight:700;color:var(--blue);font-family:var(--mono);}
+#snake-canvas{display:block;border-radius:8px;border:1px solid var(--border);width:100%;}
+.snake-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;}
+.snake-btn{padding:6px 16px;border-radius:7px;font-size:12px;font-weight:500;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.snake-btn-play{background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);color:var(--blue);}
+.snake-btn-play:hover{background:rgba(79,142,247,.2);}
+.snake-btn-pause{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
+.snake-btn-pause:hover{border-color:var(--amber);color:var(--amber);}
 
-/* BADGES */
-.badge{
-  display:inline-block;
-  font-size:10px;
-  font-weight:700;
-  padding:3px 8px;
-  border-radius:4px;
-  text-transform:uppercase;
-}
-.badge-free{background:rgba(159,166,192,0.15);color:var(--muted);}
-.badge-starter{background:rgba(0,229,255,0.15);color:#00e5ff;}
-.badge-pro{background:rgba(255,165,2,0.15);color:#ffa502;}
-.badge-elite{background:rgba(91,163,255,0.15);color:var(--accent);}
-.badge-admin{background:rgba(91,163,255,0.15);color:var(--accent);}
+/* ══ RECHERCHE ══ */
+.search-hero{text-align:center;padding:4px 0 28px;}
+.search-hero-icon{width:60px;height:60px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 0 12px rgba(79,142,247,0.2);}
+.search-hero-title{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
+.search-hero-sub{font-size:13px;color:var(--text2);}
+.mode-tabs{display:inline-flex;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;gap:2px;margin-bottom:24px;}
+.mode-tab{padding:8px 20px;border-radius:7px;font-size:13px;font-weight:500;color:var(--text2);transition:background .18s,color .18s;display:flex;align-items:center;gap:6px;border:none;background:none;font-family:var(--font);}
+.mode-tab:hover{color:var(--text);}
+.mode-tab.active{background:var(--bg4);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.4);}
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:slideUp .22s ease;}
+.search-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:28px;max-width:780px;margin:0 auto;}
+.filter-section{margin-bottom:20px;}
+.filter-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px;font-family:var(--mono);}
+.filter-label::before{content:'';display:inline-block;width:3px;height:12px;background:var(--blue);border-radius:2px;}
+.filter-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.filter-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-family:var(--mono);}
+.form-label.star{color:var(--blue);}
+.fi-wrap{position:relative;}
+.fi-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;transition:color .2s;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px 10px 35px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.form-input:focus{border-color:var(--blue);background:var(--bg4);box-shadow:0 0 0 3px rgba(79,142,247,.07);}
+.form-input:focus ~ .fi-icon,.fi-wrap:focus-within .fi-icon{color:var(--blue);}
+.form-input::placeholder{color:var(--text3);font-size:12px;}
+.filter-sep{height:1px;background:var(--border);margin:18px 0;}
+.search-tip{display:flex;align-items:flex-start;gap:8px;background:rgba(255,165,2,.05);border:1px solid rgba(255,165,2,.15);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--amber);line-height:1.6;margin-bottom:18px;}
+.btn-search{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:var(--r);color:white;font-size:14px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font);letter-spacing:.3px;}
+.btn-search:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,.3);}
+.search-footer{text-align:center;font-size:11px;color:var(--text3);margin-top:14px;font-family:var(--mono);}
+.search-limit-warning{background:var(--red2);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--red);margin-bottom:16px;display:none;max-width:780px;margin-left:auto;margin-right:auto;}
+.search-limit-warning.show{display:flex;align-items:center;gap:8px;}
+#results-section{display:none;max-width:780px;margin:24px auto 0;}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.results-title{font-size:15px;font-weight:600;}
+.results-count{font-size:11px;font-weight:600;background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);border-radius:6px;padding:3px 10px;color:var(--blue);font-family:var(--mono);}
+.result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s,transform .2s;}
+.result-card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.result-card-top{padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);}
+.result-person{display:flex;align-items:center;gap:12px;}
+.result-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;}
+.ra-blue{background:var(--blue-glow);border:1px solid rgba(79,142,247,.2);color:var(--blue);}
+.ra-red{background:var(--red2);border:1px solid rgba(255,71,87,.2);color:var(--red);}
+.ra-amber{background:rgba(255,165,2,.1);border:1px solid rgba(255,165,2,.2);color:var(--amber);}
+.result-name{font-size:14px;font-weight:600;margin-bottom:4px;}
+.result-badges{display:flex;gap:5px;flex-wrap:wrap;}
+.rbadge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;font-family:var(--mono);}
+.rbadge-breach{background:var(--red2);color:var(--red);}
+.rbadge-stealer{background:rgba(255,165,2,.1);color:var(--amber);}
+.rbadge-osint{background:var(--blue-glow);color:var(--blue);}
+.rbadge-source{background:var(--green2);color:var(--green);}
+.result-status{font-size:9px;font-weight:700;padding:3px 9px;border-radius:5px;text-transform:uppercase;font-family:var(--mono);}
+.status-breach{background:var(--red2);color:var(--red);}
+.status-found{background:var(--green2);color:var(--green);}
+.status-log{background:rgba(255,165,2,.1);color:var(--amber);}
+.result-card-body{padding:14px 18px;}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
+.result-field{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;}
+.result-field-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;font-family:var(--mono);}
+.result-field-value{font-size:12px;color:var(--text2);word-break:break-all;line-height:1.4;}
+.result-field-value.hi{color:var(--blue);font-weight:500;}
+.no-results{text-align:center;padding:60px 20px;}
+.no-results-icon{font-size:36px;margin-bottom:12px;opacity:.3;}
+.no-results-title{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.no-results-sub{font-size:12px;color:var(--text3);}
+.loading-state{display:flex;flex-direction:column;align-items:center;gap:14px;padding:60px;}
+.loader-ring{width:36px;height:36px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--blue);animation:spin .7s linear infinite;will-change:transform;}
+.loader-text{font-size:12px;color:var(--text2);font-family:var(--mono);}
+#results-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;opacity:.2;max-width:780px;margin:24px auto 0;}
 
-/* PRICING */
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px;}
-.price-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:24px;
-  text-align:center;
-  transition:all 0.3s;
-}
-.price-card:hover{border-color:var(--accent);}
-.price-card.featured{border-color:var(--accent);border-width:2px;}
-.price-name{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:12px;letter-spacing:0.05em;}
-.price-amount{font-size:36px;font-weight:700;font-family:'Courier Prime',monospace;margin-bottom:4px;}
-.price-period{font-size:11px;color:var(--muted);margin-bottom:16px;}
-.price-features{text-align:left;font-size:12px;margin-bottom:16px;}
-.price-features li{list-style:none;padding:6px 0;color:var(--muted);}
-.price-features li::before{content:'✓ ';color:var(--success);font-weight:700;}
-
-/* NOTIFICATIONS */
-.notif-panel{
-  position:fixed;top:60px;right:16px;
-  width:340px;
-  max-height:500px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  box-shadow:0 25px 50px rgba(0,0,0,0.5);
-  z-index:400;
-  display:none;
-  flex-direction:column;
-  overflow:hidden;
-}
-.notif-panel.show{display:flex;animation:slideInRight 0.3s ease;}
-.notif-header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;}
-.notif-list{overflow-y:auto;flex:1;}
-.notif-item{
-  padding:12px 16px;
-  border-bottom:1px solid rgba(255,255,255,0.02);
-  cursor:pointer;
-  transition:background 0.2s;
-}
-.notif-item:hover{background:var(--surface2);}
-.notif-type{font-size:10px;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:2px;letter-spacing:0.05em;}
-.notif-title{font-size:12px;font-weight:600;margin-bottom:2px;}
-.notif-body{font-size:11px;color:var(--muted);line-height:1.4;}
-
-/* MODAL */
-.modal-overlay{
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:700;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,0.6);
-  backdrop-filter:blur(4px);
-}
-.modal-overlay.show{display:flex;animation:fadeIn 0.2s ease;}
-.modal-box{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:28px;
-  width:90%;
-  max-width:420px;
-  box-shadow:0 25px 50px rgba(0,0,0,0.5);
-  animation:slideUp 0.3s ease;
-}
-.modal-title{font-size:18px;font-weight:700;margin-bottom:8px;}
-.modal-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
-.modal-buttons{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
-.modal-field{margin-bottom:16px;}
-
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
-
-/* FAQ STYLES */
-.faq-container{max-width:900px;margin:0 auto;}
-.faq-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-.faq-item{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  overflow:hidden;
-  transition:all 0.2s;
-}
-.faq-item:hover{border-color:var(--accent);background:rgba(91,163,255,0.01);}
-.faq-question{
-  padding:16px 20px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  font-weight:600;
-  font-size:13px;
-  user-select:none;
-}
-.faq-question:hover{color:var(--accent);}
-.faq-arrow{
-  font-size:12px;
-  color:var(--accent);
-  transition:transform 0.3s ease;
-}
+/* ══ ABONNEMENT ══ */
+.billing-toggle-wrap{display:inline-flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 14px;margin-bottom:28px;font-size:12px;}
+.billing-lbl{color:var(--text3);font-weight:500;}
+.billing-lbl.active{color:var(--text);}
+.toggle-track{width:36px;height:20px;border-radius:10px;background:var(--bg4);border:1px solid var(--border);position:relative;transition:background .25s,color .25s;}
+.toggle-track.on{background:var(--blue);border-color:var(--blue);}
+.toggle-thumb{width:14px;height:14px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:background .25s,color .25s;}
+.toggle-track.on .toggle-thumb{left:20px;}
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:50px;}
+.price-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px 20px;position:relative;transition:border-color .2s,box-shadow .2s,transform .2s;}
+.price-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3);}
+.price-card.popular{border-color:rgba(79,142,247,.4);box-shadow:0 0 0 1px rgba(79,142,247,.1);}
+.popular-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:9px;font-weight:700;padding:2px 10px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;font-family:var(--mono);}
+.price-plan-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:14px;font-family:var(--mono);}
+.price-val{font-size:38px;font-weight:700;letter-spacing:-1px;line-height:1;font-family:var(--mono);}
+.price-val sup{font-size:16px;font-weight:600;color:var(--text2);vertical-align:top;margin-top:8px;margin-right:2px;}
+.price-period{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);}
+.price-annual-note{font-size:10px;color:var(--green);margin-top:3px;min-height:14px;font-weight:500;}
+.price-divider{height:1px;background:var(--border);margin:16px 0;}
+.price-features{list-style:none;margin-bottom:18px;}
+.price-features li{font-size:12px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:8px;}
+.price-features li::before{content:"✓";color:var(--green);font-size:11px;font-weight:700;font-family:var(--mono);}
+.price-features li.na{color:var(--text3);}
+.price-features li.na::before{content:"×";color:var(--text3);}
+.price-btn{width:100%;padding:10px;border-radius:8px;font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.price-btn-outline{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
+.price-btn-outline:hover{border-color:var(--blue);color:var(--blue);}
+.price-btn-solid{background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;color:white;}
+.price-btn-solid:hover{box-shadow:0 4px 16px rgba(79,142,247,.35);transform:translateY(-1px);}
+.why-section{margin-bottom:50px;}
+.why-title{text-align:center;font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;}
+.why-title span{color:var(--blue);}
+.why-sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:32px;}
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.why-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:26px;transition:border-color .2s,box-shadow .2s,transform .2s;}
+.why-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.why-icon{font-size:30px;margin-bottom:14px;}
+.why-card-title{font-size:15px;font-weight:700;margin-bottom:8px;}
+.why-card-text{font-size:12px;color:var(--text2);line-height:1.7;}
+.faq-section{margin-bottom:40px;}
+.faq-title{text-align:center;font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:32px;}
+.faq-title span{color:var(--blue);}
+.faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px;}
+.faq-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:border-color .2s;}
+.faq-item.open{border-color:var(--border2);}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-size:14px;font-weight:600;transition:color .2s;}
+.faq-q:hover{color:var(--blue);}
+.faq-arrow{font-size:12px;color:var(--blue);transition:transform .25s;}
 .faq-item.open .faq-arrow{transform:rotate(180deg);}
-.faq-answer{
-  display:none;
-  padding:0 20px 16px;
-  border-top:1px solid var(--border);
-  font-size:13px;
-  color:var(--text);
-  line-height:1.7;
-}
-.faq-item.open .faq-answer{display:block;animation:slideUp 0.3s ease;}
-.faq-answer strong{color:var(--accent);}
-.faq-answer a{color:var(--accent);}
+.faq-a{display:none;padding:0 20px 16px;font-size:13px;color:var(--text2);line-height:1.7;border-top:1px solid var(--border);}
+.faq-item.open .faq-a{display:block;animation:slideUp .2s ease;}
 
-/* LEGAL PAGES STYLES */
-.legal-container{max-width:900px;margin:0 auto;}
-.legal-section{margin-bottom:32px;}
-.legal-title{font-size:24px;font-weight:700;margin-bottom:8px;color:var(--text);}
-.legal-subtitle{font-size:13px;color:var(--muted);margin-bottom:16px;}
-.legal-content{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:24px;
-  line-height:1.8;
-  color:var(--text);
-  font-size:13px;
-}
-.legal-content h2{
-  font-size:16px;
-  font-weight:700;
-  margin:24px 0 12px;
-  color:var(--accent);
-}
-.legal-content h3{
-  font-size:14px;
-  font-weight:600;
-  margin:16px 0 8px;
-  color:var(--text);
-}
-.legal-content p{margin-bottom:12px;}
-.legal-content li{margin-left:20px;margin-bottom:6px;}
-.legal-content ul{margin-bottom:12px;}
-.legal-content strong{color:var(--accent);}
+/* ══ COMPTE ══ */
+.compte-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.compte-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);}
+.compte-card-head{padding:14px 20px;border-bottom:1px solid var(--border);}
+.compte-card-title{font-size:13px;font-weight:600;}
+.compte-card-body{padding:20px;}
+.compte-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.compte-row:last-child{border:none;}
+.compte-row-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono);}
+.compte-row-val{font-size:13px;color:var(--text);font-weight:500;}
+.compte-field{margin-bottom:13px;}
+.compte-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px;font-family:var(--mono);}
+.ci-wrap{position:relative;}
+.ci-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;}
+.compte-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px 10px 35px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.compte-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,.07);}
+.compte-input::placeholder{color:var(--text3);font-size:12px;}
+.btn-compte{padding:10px 20px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:8px;color:white;font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.btn-compte:hover{box-shadow:0 4px 14px rgba(79,142,247,.3);}
+.compte-msg{font-size:12px;padding:10px 13px;border-radius:7px;margin-top:10px;display:none;align-items:center;gap:7px;}
+.compte-msg.show{display:flex;}
+.compte-error{background:var(--red2);border:1px solid rgba(255,71,87,.2);color:var(--red);}
+.compte-success{background:var(--green2);border:1px solid rgba(16,212,116,.2);color:var(--green);}
 
-@media(max-width:768px){
-  .sidebar{display:none;}
-  .main{margin-left:0;}
-  .topbar{padding:0 16px;}
-  .form-grid,.form-grid-3{grid-template-columns:1fr;}
-}
+/* ══ ADMIN ══ */
+.admin-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.admin-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:border-color .2s,box-shadow .2s,transform .2s;position:relative;overflow:hidden;}
+.admin-stat:hover{border-color:var(--border2);}
+.admin-stat-num{font-size:30px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;}
+.admin-stat-label{font-size:11px;color:var(--text2);margin-top:5px;}
+.admin-stat-trend{font-size:10px;color:var(--green);font-family:var(--mono);margin-top:3px;}
+/* Realtime dot */
+.rt-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(16,212,116,.6);animation:pulse 4s infinite;margin-right:5px;vertical-align:middle;}
+.admin-table-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.admin-table-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.admin-table-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.asw{position:relative;}
+.asi{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none;}
+.admin-search{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px 7px 30px;color:var(--text);font-size:12px;outline:none;width:200px;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.admin-search:focus{border-color:var(--blue);}
+.admin-search::placeholder{color:var(--text3);}
+.admin-table{width:100%;border-collapse:collapse;}
+.admin-table th{padding:10px 18px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);border-bottom:1px solid var(--border);font-family:var(--mono);}
+.admin-table td{padding:13px 18px;font-size:12px;color:var(--text2);border-bottom:1px solid rgba(255,255,255,.02);}
+.admin-table tr:last-child td{border:none;}
+.admin-table tr:hover td{background:rgba(255,255,255,.015);color:var(--text);}
+.admin-action-btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;transition:border-color .2s,box-shadow .2s,transform .2s;border:1px solid;margin-right:4px;font-family:var(--font);}
+.btn-edit{border-color:rgba(79,142,247,.3);color:var(--blue);background:var(--blue-glow);}
+.btn-edit:hover{background:rgba(79,142,247,.2);}
+.btn-delete{border-color:rgba(255,71,87,.3);color:var(--red);background:var(--red2);}
+.btn-delete:hover{background:rgba(255,71,87,.15);}
+/* Online indicator in table */
+.user-online-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text3);margin-right:4px;vertical-align:middle;}
+.user-online-dot.on{background:var(--green);box-shadow:0 0 6px rgba(16,212,116,.5);}
+.notif-editor{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:22px;margin-top:18px;}
+.notif-editor-title{font-size:13px;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.notif-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.notif-field{display:flex;flex-direction:column;gap:5px;}
+.notif-field label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);font-family:var(--mono);}
+.notif-input,.notif-select,.notif-textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.notif-input:focus,.notif-select:focus,.notif-textarea:focus{border-color:var(--blue);}
+.notif-textarea{resize:vertical;min-height:60px;}
+.btn-add-notif{padding:9px 18px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.btn-add-notif:hover{background:rgba(79,142,247,.2);}
+.notif-list-admin{margin-top:12px;max-height:200px;overflow-y:auto;}
+.notif-admin-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg3);border-radius:7px;margin-bottom:5px;}
+.notif-admin-item-text{font-size:11px;color:var(--text2);}
+.btn-del-notif{background:var(--red2);border:1px solid rgba(255,71,87,.2);border-radius:5px;color:var(--red);font-size:10px;font-weight:600;padding:3px 8px;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.btn-del-notif:hover{background:rgba(255,71,87,.15);}
+
+/* ══ MODALS ══ */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:700;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);}
+.modal-overlay.show{display:flex;animation:fadeIn .2s;}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;max-width:380px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:scaleIn .25s ease;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+.modal-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;}
+.modal-buttons{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btn-cancel{padding:8px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.modal-btn-cancel:hover{border-color:var(--border2);color:var(--text);}
+.modal-btn-confirm{padding:8px 16px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:8px;font-size:13px;font-weight:600;color:white;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.modal-btn-confirm:hover{box-shadow:0 4px 14px rgba(79,142,247,.3);}
+.modal-field{margin-bottom:13px;}
+.modal-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:6px;font-family:var(--mono);}
+.modal-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 11px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;font-family:var(--font);}
+.modal-select:focus{border-color:var(--blue);}
+
+/* ══ RIPPLE EFFECT ══ */
+.ripple-container{position:relative;}
 </style>
+
 </head>
 <body>
 
-<!-- VERIFICATION -->
-<div id="verification-page" class="auth-page show">
-  <div class="auth-wrap" style="text-align:center;max-width:300px;">
-    <div style="font-size:36px;margin-bottom:16px;">🔍</div>
-    <div style="font-size:20px;font-weight:700;margin-bottom:8px;">DarkSearcher</div>
-    <div style="font-size:12px;color:var(--muted);">Initialisation...</div>
-  </div>
-</div>
 
-<!-- LOGIN -->
-<div id="login-page" class="auth-page">
-  <div class="auth-wrap">
-    <div class="auth-box">
-      <div class="auth-header">
-        <div class="auth-icon">🔍</div>
-        <div class="auth-title">Se connecter</div>
-        <div class="auth-desc">Accédez à votre compte DarkSearcher</div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Identifiant</label>
-        <div class="input-field">
-          <input id="login-user" type="text" placeholder="identifiant">
-        </div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Mot de passe</label>
-        <div class="input-field">
-          <input id="login-pass" type="password" placeholder="••••••••">
-        </div>
-        <div class="input-error" id="login-error"></div>
-      </div>
-      <button class="btn" onclick="doLogin()">Se connecter</button>
-      <div class="auth-footer">
-        Pas de compte ? <a onclick="showRegister()">Créer un compte</a>
-      </div>
+
+
+
+<div id="login-page" class="auth-page show">
+  <div class="auth-wrap"><div class="auth-box">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">🔍</div>
+      <div class="auth-logo-text">Dark<span>Searcher</span></div>
+      <div class="auth-logo-sub">Intelligence Platform v2.0</div>
     </div>
-  </div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-field"><label class="auth-label">Identifiant</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" id="login-user" placeholder="identifiant" autocomplete="username">
+        <span class="auth-input-icon">👤</span>
+      </div></div>
+    <div class="auth-field"><label class="auth-label">Mot de passe</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+        <span class="auth-input-icon">🔑</span>
+      </div></div>
+    <button class="auth-btn ripple-container" onclick="doLogin()">Se connecter</button>
+    <div class="auth-attempts" id="login-attempts-info"></div>
+    <div class="auth-switch">Pas de compte ? <a onclick="showRegister()">Créer un compte</a></div>
+    <div class="auth-reset"><a onclick="hardReset()">↺ Réinitialiser le cache</a></div>
+  </div></div>
 </div>
 
-<!-- REGISTER -->
+
 <div id="register-page" class="auth-page">
-  <div class="auth-wrap">
-    <div class="auth-box">
-      <div class="auth-header">
-        <div class="auth-icon">🔍</div>
-        <div class="auth-title">Créer un compte</div>
-        <div class="auth-desc">Rejoignez DarkSearcher</div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Identifiant</label>
-        <div class="input-field">
-          <input id="reg-user" type="text" placeholder="Min. 3 caractères">
-        </div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Email</label>
-        <div class="input-field">
-          <input id="reg-email" type="email" placeholder="email@exemple.com">
-        </div>
-        <div class="input-error" id="email-error"></div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Mot de passe</label>
-        <div class="input-field">
-          <input id="reg-pass" type="password" placeholder="Min. 6 caractères">
-        </div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Confirmer</label>
-        <div class="input-field">
-          <input id="reg-pass2" type="password" placeholder="Répéter le mot de passe">
-        </div>
-        <div class="input-error" id="reg-error"></div>
-      </div>
-      <button class="btn" onclick="doRegister()">Créer le compte</button>
-      <div class="auth-footer">
-        Déjà inscrit ? <a onclick="showLogin()">Se connecter</a>
-      </div>
+  <div class="auth-wrap"><div class="auth-box">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">🔍</div>
+      <div class="auth-logo-text">Dark<span>Searcher</span></div>
+      <div class="auth-logo-sub">Créer un compte</div>
     </div>
-  </div>
+    <div class="auth-error" id="reg-error"></div>
+    <div class="auth-field"><label class="auth-label">Identifiant</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" id="reg-user" placeholder="identifiant" oninput="checkUsername()">
+        <span class="auth-input-icon">👤</span>
+      </div></div>
+    <div class="auth-field"><label class="auth-label">Email</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" id="reg-email" placeholder="email@exemple.com">
+        <span class="auth-input-icon">✉️</span>
+      </div></div>
+    <div class="auth-field"><label class="auth-label">Mot de passe</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" type="password" id="reg-pass" placeholder="Min. 6 caractères" oninput="checkPassStrength()">
+        <span class="auth-input-icon">🔑</span>
+      </div>
+      <div class="pass-strength-bar"><div class="pass-strength-fill" id="pass-strength"></div></div></div>
+    <div class="auth-field"><label class="auth-label">Confirmation</label>
+      <div class="auth-input-wrap">
+        <input class="auth-input" type="password" id="reg-pass2" placeholder="Répéter">
+        <span class="auth-input-icon">🔑</span>
+      </div></div>
+    <button class="auth-btn ripple-container" onclick="doRegister()">Créer le compte</button>
+    <div class="auth-switch">Déjà inscrit ? <a onclick="showLogin()">Se connecter</a></div>
+  </div></div>
 </div>
 
-<!-- APP -->
+
 <div id="app">
+  
   <div class="topbar">
-    <div class="logo">
-      <span style="font-size:18px;">🔍</span>
-      <span>Dark<span>Searcher</span></span>
+    <div class="topbar-brand">
+      <div class="topbar-logo-icon">🔍</div>
+      <div class="topbar-logo-text">Dark<span style="color:var(--blue)">Searcher</span></div>
     </div>
-    <div class="topbar-spacer"></div>
-    <div class="status-badge">
-      <div class="online-indicator"></div>
-      <span id="online-count">1</span> utilisateur
+    <div class="topbar-center">
+      <div class="online-badge"><div class="online-dot"></div><span id="online-count">1</span> en ligne</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="clock">--:--:--</div>
     </div>
-    <div class="topbar-actions">
-      <button class="icon-btn" onclick="toggleNotif()">🔔</button>
-      <button class="logout-btn" onclick="logout()">Déconnexion</button>
-    </div>
-  </div>
-
-  <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Navigation</div>
-      <div class="sidebar-item active" onclick="goPage(this,'home')"><span class="sidebar-icon">🏠</span>Accueil</div>
-      <div class="sidebar-item" onclick="goPage(this,'search')"><span class="sidebar-icon">📄</span>Document</div>
-      <div class="sidebar-item" onclick="goPage(this,'lookup')"><span class="sidebar-icon">🔎</span>Lookup</div>
-      <div class="sidebar-item" onclick="goPage(this,'pricing')"><span class="sidebar-icon">💳</span>Abonnements</div>
-      <div class="sidebar-item" onclick="goPage(this,'faq')"><span class="sidebar-icon">❓</span>FAQ</div>
-    </div>
-    <div style="border-top:1px solid var(--border);margin:0 12px;"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Compte</div>
-      <div class="sidebar-item" onclick="goPage(this,'account')"><span class="sidebar-icon">👤</span>Profil</div>
-      <div class="sidebar-item" id="admin-link" style="display:none;" onclick="goPage(this,'admin')"><span class="sidebar-icon">⚙️</span>Admin</div>
-    </div>
-    <div style="border-top:1px solid var(--border);margin:0 12px;"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Légal</div>
-      <div class="sidebar-item" onclick="goPage(this,'tos')"><span class="sidebar-icon">📋</span>Conditions</div>
-      <div class="sidebar-item" onclick="goPage(this,'privacy')"><span class="sidebar-icon">🔒</span>Confidentialité</div>
+    <div class="topbar-right">
+      <div class="tb-btn" onclick="toggleNotifPanel()">🔔<span class="notif-badge" id="notif-badge">0</span></div>
+      <div class="tb-avatar" id="topbar-avatar-letter">?</div>
+      <div class="tb-logout" onclick="logout()">Déconnexion</div>
     </div>
   </div>
 
+  
   <div class="notif-panel" id="notif-panel">
-    <div class="notif-header">Notifications</div>
+    <div class="notif-panel-head">
+      <div class="notif-panel-title">Notifications</div>
+      <button class="notif-mark-read" onclick="markAllRead()">Tout lire</button>
+    </div>
     <div class="notif-list" id="notif-list"></div>
   </div>
 
+  
+  <div class="sidebar">
+    <div class="sb-user">
+      <div class="sb-user-top">
+        <div class="sb-user-avatar" id="sb-avatar-letter">?</div>
+        <div>
+          <div class="sb-user-name" id="sb-username">—</div>
+          <div class="sb-user-tag" id="sb-usertag">@—</div>
+        </div>
+        <span class="sb-plan-badge plan-free" id="sb-plan-badge" style="margin-left:auto">Free</span>
+      </div>
+      <div class="sb-mini-stats">
+        <div class="sb-mini-stat"><div class="sb-mini-stat-num" id="sb-searches-left">∞</div><div class="sb-mini-stat-label">Requêtes</div></div>
+        <div class="sb-mini-stat"><div class="sb-mini-stat-num" id="sb-online-mini">1</div><div class="sb-mini-stat-label">En ligne</div></div>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">Navigation</div>
+      <div class="sb-item active" id="sb-accueil" onclick="sideNav(this,'accueil')"><span class="sb-item-icon">🏠</span>Accueil</div>
+      <div class="sb-item" id="sb-abonnement" onclick="sideNav(this,'abonnement')"><span class="sb-item-icon">🛍️</span>Shop</div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-section">
+      <div class="sb-section-title">Outils</div>
+      <div class="sb-item" id="sb-recherche" onclick="sideNav(this,'recherche')"><span class="sb-item-icon">🔍</span>Recherche</div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-section">
+      <div class="sb-section-title">Compte</div>
+      <div class="sb-item" id="sb-compte" onclick="sideNav(this,'compte')"><span class="sb-item-icon">👤</span>Mon profil</div>
+      <div class="sb-item" id="sb-admin" style="display:none" onclick="sideNav(this,'admin')"><span class="sb-item-icon">⚙️</span>Administration<span class="sb-item-badge badge-admin">Admin</span></div>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="sb-divider"></div>
+    <div class="sb-section">
+      <div class="sb-item" onclick="logout()" style="color:var(--red)"><span class="sb-item-icon">🚪</span>Déconnexion</div>
+    </div>
+  </div>
+
+  
   <div class="main">
-    <!-- HOME -->
-    <div id="page-home" class="page active">
-      <div class="page-header">
-        <div class="page-title">Bienvenue</div>
-        <div class="page-subtitle">Bienvenue <span style="color:var(--accent);" id="welcome-user">—</span></div>
+
+    
+    <div id="page-accueil" class="page active">
+      <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Accueil</span></div>
+      <div class="welcome-container">
+        <div class="welcome-text">Bienvenue <span class="welcome-username" id="welcome-username"></span></div>
       </div>
       <div class="stats-grid">
-        <div class="stat">
-          <div class="stat-label">Records indexés</div>
-          <div class="stat-value">50M</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Sources actives</div>
-          <div class="stat-value">4800+</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Temps réponse</div>
-          <div class="stat-value">42ms</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Utilisateurs</div>
-          <div class="stat-value" id="stat-users">0</div>
-        </div>
+        <div class="stat-card blue"><span class="stat-icon">📦</span><div class="stat-num" id="stat-total">0</div><div class="stat-label">Records indexés</div></div>
+        <div class="stat-card green"><span class="stat-icon">🌐</span><div class="stat-num" id="stat-sources">0</div><div class="stat-label">Sources actives</div></div>
+        <div class="stat-card amber"><span class="stat-icon">⚡</span><div class="stat-num" id="stat-uptime">0</div><div class="stat-label">Ms de réponse</div></div>
+        <div class="stat-card purple"><span class="stat-icon">👥</span><div class="stat-num" id="stat-users">0</div><div class="stat-label">Opérateurs actifs</div></div>
       </div>
-      <div class="card">
-        <div class="card-title">Informations compte</div>
-        <table class="table">
-          <tr>
-            <td style="width:50%;"><strong>Identifiant</strong><br><span style="color:var(--muted);font-size:12px;" id="info-user">—</span></td>
-            <td><strong>Licence</strong><br><span id="info-plan" class="badge badge-free"></span></td>
-          </tr>
-          <tr>
-            <td><strong>Email</strong><br><span style="color:var(--muted);font-size:12px;" id="info-email">—</span></td>
-            <td><strong>Requêtes (aujourd'hui)</strong><br><span style="color:var(--accent);font-weight:700;" id="info-searches">0</span></td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- DOCUMENT SEARCH -->
-    <div id="page-search" class="page">
-      <div class="page-header">
-        <div class="page-title">Recherche Document</div>
-        <div class="page-subtitle">Interrogez notre base de données documentaires</div>
-      </div>
-      <div class="search-container">
-        <div class="search-form">
-          <div class="form-grid form-grid-3" style="margin-bottom:16px;">
-            <div class="form-group">
-              <label class="form-label">Prénom</label>
-              <input class="form-input" id="s-firstname" placeholder="Jean">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Nom</label>
-              <input class="form-input" id="s-lastname" placeholder="Dupont">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Téléphone</label>
-              <input class="form-input" id="s-phone" placeholder="0612345678">
+      <div class="home-grid">
+        <div class="discord-card">
+          <div class="dc-badge">💬 Officiel</div>
+          <div class="dc-title">Serveur Discord</div>
+          <div class="dc-sub">Support, achats d'abonnements et annonces en exclusivité.</div>
+          <a class="dc-btn" href="https://discord.gg/rfshop" target="_blank">discord.gg/rfshop →</a>
+        </div>
+        <div class="snake-card">
+          <div class="snake-header">
+            <div class="snake-title">🎮 Snake</div>
+            <div class="snake-scores">
+              <div class="snake-score-item"><div class="snake-score-label">Score</div><div class="snake-score-val" id="snake-score">0</div></div>
+              <div class="snake-score-item"><div class="snake-score-label">Record</div><div class="snake-score-val" id="snake-best">0</div></div>
             </div>
           </div>
-          <div class="form-grid form-grid-3" style="margin-bottom:16px;">
-            <div class="form-group">
-              <label class="form-label">Adresse</label>
-              <input class="form-input" id="s-address" placeholder="123 rue de...">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Ville</label>
-              <input class="form-input" id="s-city" placeholder="Paris">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Département</label>
-              <input class="form-input" id="s-dept" placeholder="75 ou 75001">
-            </div>
+          <canvas id="snake-canvas" width="340" height="200"></canvas>
+          <div class="snake-controls">
+            <button class="snake-btn snake-btn-play" onclick="snakePlay()">▶ Jouer</button>
+            <button class="snake-btn snake-btn-pause" onclick="snakePause()">⏸ Pause</button>
           </div>
-          <button class="btn" onclick="searchDocument()">🔍 Rechercher</button>
-          <div style="font-size:11px;color:var(--muted);margin-top:12px;text-align:center;">Les résultats sont chiffrés · Recherche anonyme</div>
-        </div>
-        <div class="results-section" id="results-section">
-          <div class="results-header">
-            <div class="results-title">Résultats</div>
-            <div class="results-count" id="results-count">0</div>
-          </div>
-          <div id="results-list"></div>
         </div>
       </div>
     </div>
 
-    <!-- LOOKUP -->
-    <div id="page-lookup" class="page">
-      <div class="page-header">
-        <div class="page-title">Lookup</div>
-        <div class="page-subtitle">Recherchez par Discord ID, Email, IP ou Username</div>
+    
+    <div id="page-recherche" class="page">
+      <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Recherche avancée</span></div>
+      <div class="search-hero">
+        <div class="search-hero-icon">🔍</div>
+        <div class="search-hero-title">Recherche avancée</div>
+        <div class="search-hero-sub">Combinez plusieurs critères pour explorer notre base de données</div>
       </div>
-      <div class="search-container">
-        <div class="search-form">
-          <div class="form-group" style="margin-bottom:16px;">
-            <label class="form-label">Identifiant</label>
-            <input class="form-input" id="lookup-query" placeholder="Discord ID • Email • IP • Username">
+      <div style="text-align:center;">
+        <div class="mode-tabs">
+          <button class="mode-tab active" onclick="switchTab(this,'breach')">🔓 Breach</button>
+          <button class="mode-tab" onclick="switchTab(this,'stealer')">🦠 Stealer</button>
+          <button class="mode-tab" onclick="switchTab(this,'osint')">🕵️ OSINT</button>
+        </div>
+      </div>
+      <div class="search-limit-warning" id="search-limit-warn"></div>
+      
+      <div class="tab-content active" id="tab-breach">
+        <div class="search-card">
+          <div class="filter-section">
+            <div class="filter-label">Identité</div>
+            <div class="filter-grid-2">
+              <div class="form-group"><label class="form-label star">Email</label><div class="fi-wrap"><input class="form-input" id="s-email" placeholder="jean@gmail.com"><span class="fi-icon">✉️</span></div></div>
+              <div class="form-group"><label class="form-label">Téléphone</label><div class="fi-wrap"><input class="form-input" id="s-telephone" placeholder="0612345678"><span class="fi-icon">📞</span></div></div>
+              <div class="form-group"><label class="form-label">Nom</label><div class="fi-wrap"><input class="form-input" id="s-nom" placeholder="Dupont"><span class="fi-icon">👤</span></div></div>
+              <div class="form-group"><label class="form-label">Prénom</label><div class="fi-wrap"><input class="form-input" id="s-prenom" placeholder="Jean"><span class="fi-icon">👤</span></div></div>
+            </div>
           </div>
-          <button class="btn" onclick="doLookup()">🔎 Lookup</button>
-        </div>
-        <div class="results-section" id="lookup-results" style="display:none;margin-top:24px;">
-          <div id="lookup-content"></div>
+          <div class="filter-sep"></div>
+          <div class="filter-section">
+            <div class="filter-label">Localisation</div>
+            <div class="filter-grid-3">
+              <div class="form-group"><label class="form-label">Ville</label><div class="fi-wrap"><input class="form-input" id="s-ville" placeholder="Paris"><span class="fi-icon">🏙️</span></div></div>
+              <div class="form-group"><label class="form-label">Code postal / Dept</label><div class="fi-wrap"><input class="form-input" id="s-departement" placeholder="75, 81100..."><span class="fi-icon">📍</span></div></div>
+              <div class="form-group"><label class="form-label">Pays</label><div class="fi-wrap"><input class="form-input" id="s-pays" placeholder="France"><span class="fi-icon">🌍</span></div></div>
+            </div>
+          </div>
+          <div class="filter-sep"></div>
+          <div class="filter-section">
+            <div class="filter-label">Numérique</div>
+            <div class="filter-grid-3">
+              <div class="form-group"><label class="form-label">Username</label><div class="fi-wrap"><input class="form-input" id="s-username" placeholder="jean_d"><span class="fi-icon">🏷️</span></div></div>
+              <div class="form-group"><label class="form-label">Adresse IP</label><div class="fi-wrap"><input class="form-input" id="s-ip" placeholder="1.2.3.4"><span class="fi-icon">🌐</span></div></div>
+              <div class="form-group"><label class="form-label">Domaine</label><div class="fi-wrap"><input class="form-input" id="s-domaine" placeholder="exemple.com"><span class="fi-icon">🔗</span></div></div>
+            </div>
+          </div>
+          <div class="filter-sep"></div>
+          <div class="search-tip">⚡ Remplis nom + code postal pour filtrer par département. Ex: Dupont + 81100</div>
+          <button class="btn-search ripple-container" onclick="doSearch('breach')">🔍 Lancer la recherche</button>
+          <div class="search-footer">🔒 Chiffré · Anonyme · Sécurisé</div>
         </div>
       </div>
+      
+      <div class="tab-content" id="tab-stealer">
+        <div class="search-card">
+          <div class="filter-section">
+            <div class="filter-label">Stealer Logs</div>
+            <div class="form-group" style="margin-bottom:18px">
+              <label class="form-label">Requête</label>
+              <div class="fi-wrap"><input class="form-input" id="s-stealer-q" placeholder="email, domaine, Discord ID..."><span class="fi-icon">🔍</span></div>
+            </div>
+          </div>
+          <button class="btn-search ripple-container" onclick="doSearch('stealer')">🦠 Rechercher dans les logs</button>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="tab-osint">
+        <div class="search-card">
+          <div class="filter-section">
+            <div class="filter-label">OSINT Lookup</div>
+            <div class="form-group" style="margin-bottom:18px">
+              <label class="form-label">Identifiant cible</label>
+              <div class="fi-wrap"><input class="form-input" id="s-osint-q" placeholder="Discord ID, Steam ID, email..."><span class="fi-icon">🕵️</span></div>
+            </div>
+          </div>
+          <button class="btn-search ripple-container" onclick="doSearch('osint')">🕵️ Lancer OSINT</button>
+        </div>
+      </div>
+      <div id="results-section">
+        <div class="results-header"><div class="results-title">Résultats</div><div class="results-count" id="results-count">0 résultat</div></div>
+        <div id="results-list"></div>
+      </div>
+      <div id="results-placeholder"><div style="font-size:40px">🔍</div><div style="font-size:14px;font-weight:600;color:var(--text2)">En attente d'une requête</div></div>
     </div>
 
-    <!-- PRICING -->
-    <div id="page-pricing" class="page">
-      <div class="page-header">
-        <div class="page-title">Abonnements</div>
-        <div class="page-subtitle">Choisissez le plan adapté à vos besoins</div>
+    
+    <div id="page-abonnement" class="page">
+      <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Shop</span></div>
+      <div class="page-title">Shop</div>
+      <div class="page-subtitle">Choisissez la licence adaptée à vos besoins</div>
+      <div class="billing-toggle-wrap">
+        <span class="billing-lbl active" id="lbl-m" onclick="toggleBill()">Mensuel</span>
+        <div class="toggle-track" id="bill-tog" onclick="toggleBill()"><div class="toggle-thumb"></div></div>
+        <span class="billing-lbl" id="lbl-a" onclick="toggleBill()">Annuel (−20%)</span>
       </div>
       <div class="pricing-grid">
-        <div class="price-card">
-          <div class="price-name">Free</div>
-          <div class="price-amount">0€</div>
-          <div class="price-period">Pour toujours</div>
-          <ul class="price-features">
-            <li>10 requêtes/jour</li>
-            <li>Document search</li>
-            <li>Lookup basique</li>
-          </ul>
-          <button class="btn-secondary" style="width:100%;">Plan actuel</button>
+        <div class="price-card"><div class="price-plan-name">Free</div><div class="price-val">0<sup>€</sup></div><div class="price-period">Pour toujours</div><div class="price-annual-note">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>10 recherches / jour</li><li>Breach Search</li><li class="na">Stealer Logs</li><li class="na">OSINT</li><li class="na">Support</li></ul><button class="price-btn price-btn-outline">Plan actuel</button></div>
+        <div class="price-card"><div class="price-plan-name">Starter</div><div class="price-val"><sup>€</sup><span id="starter-price">10</span></div><div class="price-period" id="starter-period">/ mois</div><div class="price-annual-note" id="starter-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>100 recherches / jour</li><li>Breach Search avancé</li><li>Stealer Logs</li><li class="na">OSINT</li><li class="na">Support prioritaire</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Starter')">Activer</button></div>
+        <div class="price-card popular"><div class="popular-badge">⚡ Populaire</div><div class="price-plan-name">Pro</div><div class="price-val"><sup>€</sup><span id="pro-price">25</span></div><div class="price-period" id="pro-period">/ mois</div><div class="price-annual-note" id="pro-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>Illimité</li><li>Tous les modules</li><li>OSINT complet</li><li>Accès API</li><li class="na">Support 24/7</li></ul><button class="price-btn price-btn-solid" onclick="openModal('Pro')">Activer Pro</button></div>
+        <div class="price-card"><div class="price-plan-name">Elite</div><div class="price-val"><sup>€</sup><span id="elite-price">80</span></div><div class="price-period" id="elite-period">/ mois</div><div class="price-annual-note" id="elite-annual">&nbsp;</div><div class="price-divider"></div><ul class="price-features"><li>Tout de Pro</li><li>Support 24/7</li><li>Exports illimités</li><li>Accès bêta</li><li>Manager dédié</li></ul><button class="price-btn price-btn-outline" onclick="openModal('Elite')" style="border-color:rgba(79,142,247,.4);color:var(--blue)">Activer Elite</button></div>
+      </div>
+      <div class="why-section">
+        <div class="why-title">Pourquoi choisir <span>DarkSearcher</span> ?</div>
+        <div class="why-sub">Une plateforme d'intelligence conçue pour les professionnels</div>
+        <div class="why-grid">
+          <div class="why-card"><div class="why-icon">⚡</div><div class="why-card-title">Vitesse Maximale</div><div class="why-card-text">Résultats en moins de 500ms grâce à nos serveurs haute performance distribués mondialement.</div></div>
+          <div class="why-card"><div class="why-icon">🔒</div><div class="why-card-title">Sécurité Totale</div><div class="why-card-text">Toutes vos recherches sont chiffrées de bout en bout. Aucune donnée conservée après la session.</div></div>
+          <div class="why-card"><div class="why-icon">🗄️</div><div class="why-card-title">50+ Milliards d'entrées</div><div class="why-card-text">La plus grande base indexée, mise à jour en temps réel avec de nouvelles sources chaque jour.</div></div>
         </div>
-        <div class="price-card">
-          <div class="price-name">Starter</div>
-          <div class="price-amount">10€</div>
-          <div class="price-period">par mois</div>
-          <ul class="price-features">
-            <li>100 requêtes/jour</li>
-            <li>Document avancé</li>
-            <li>Lookup premium</li>
-            <li>Support email</li>
-          </ul>
-          <button class="btn" onclick="buyPlan('Starter')">Activer</button>
-        </div>
-        <div class="price-card featured">
-          <div class="price-name">⭐ Pro</div>
-          <div class="price-amount">25€</div>
-          <div class="price-period">par mois</div>
-          <ul class="price-features">
-            <li>Illimité</li>
-            <li>Tous les modules</li>
-            <li>API accès</li>
-            <li>Support prioritaire</li>
-          </ul>
-          <button class="btn" onclick="buyPlan('Pro')">Activer Pro</button>
-        </div>
-        <div class="price-card">
-          <div class="price-name">Elite</div>
-          <div class="price-amount">80€</div>
-          <div class="price-period">par mois</div>
-          <ul class="price-features">
-            <li>Tout de Pro</li>
-            <li>Support 24/7</li>
-            <li>Manager dédié</li>
-            <li>Export illimité</li>
-          </ul>
-          <button class="btn" onclick="buyPlan('Elite')">Activer Elite</button>
+      </div>
+      <div class="faq-section">
+        <div class="faq-title">Questions <span>fréquentes</span></div>
+        <div class="faq-list">
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Comment fonctionne la facturation ? <span class="faq-arrow">▼</span></div><div class="faq-a">Le paiement s'effectue via notre serveur Discord. Contactez un admin sur discord.gg/rfshop.</div></div>
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Puis-je changer de plan ? <span class="faq-arrow">▼</span></div><div class="faq-a">Oui, contactez un admin sur Discord. Le changement est immédiat.</div></div>
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Y a-t-il une période d'essai ? <span class="faq-arrow">▼</span></div><div class="faq-a">Le plan Free offre 10 recherches/jour en permanence.</div></div>
+          <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q">Mes données sont-elles sécurisées ? <span class="faq-arrow">▼</span></div><div class="faq-a">Oui, chiffrement end-to-end. Aucune donnée stockée après la session.</div></div>
         </div>
       </div>
     </div>
 
-    <!-- ACCOUNT -->
-    <div id="page-account" class="page">
-      <div class="page-header">
-        <div class="page-title">Mon compte</div>
-        <div class="page-subtitle">Gérez votre profil et vos paramètres</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="card">
-          <div class="card-title">Informations</div>
-          <div style="font-size:12px;">
-            <div style="margin-bottom:12px;">
-              <div style="color:var(--muted);font-weight:600;margin-bottom:4px;">IDENTIFIANT</div>
-              <div id="acc-user">—</div>
-            </div>
-            <div style="margin-bottom:12px;">
-              <div style="color:var(--muted);font-weight:600;margin-bottom:4px;">EMAIL</div>
-              <div id="acc-email">—</div>
-            </div>
-            <div>
-              <div style="color:var(--muted);font-weight:600;margin-bottom:4px;">LICENCE</div>
-              <span id="acc-plan" class="badge badge-free"></span>
-            </div>
+    
+    <div id="page-compte" class="page">
+      <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Mon compte</span></div>
+      <div class="page-title">Mon compte</div>
+      <div class="page-subtitle">Gérez votre profil et sécurité</div>
+      <div class="compte-grid">
+        <div class="compte-card">
+          <div class="compte-card-head"><div class="compte-card-title">Informations</div></div>
+          <div class="compte-card-body">
+            <div class="compte-row"><span class="compte-row-label">Identifiant</span><span class="compte-row-val" id="compte-username">—</span></div>
+            <div class="compte-row"><span class="compte-row-label">Email</span><span class="compte-row-val" id="compte-email">—</span></div>
+            <div class="compte-row"><span class="compte-row-label">Licence</span><span class="compte-row-val" id="compte-plan">—</span></div>
+            <div class="compte-row"><span class="compte-row-label">Requêtes aujourd'hui</span><span class="compte-row-val" id="compte-searches">0</span></div>
+            <div class="compte-row"><span class="compte-row-label">Membre depuis</span><span class="compte-row-val" id="compte-since">—</span></div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title">Sécurité</div>
-          <div class="form-group">
-            <label class="form-label">Mot de passe actuel</label>
-            <input class="form-input" type="password" id="pass-old">
+        <div class="compte-card">
+          <div class="compte-card-head"><div class="compte-card-title">Changer le mot de passe</div></div>
+          <div class="compte-card-body">
+            <div class="compte-field"><label class="compte-label">Mot de passe actuel</label><div class="ci-wrap"><span class="ci-icon">🔑</span><input class="compte-input" type="password" id="pass-current" placeholder="••••••••"></div></div>
+            <div class="compte-field"><label class="compte-label">Nouveau</label><div class="ci-wrap"><span class="ci-icon">🔑</span><input class="compte-input" type="password" id="pass-new" placeholder="••••••••"></div></div>
+            <div class="compte-field"><label class="compte-label">Confirmation</label><div class="ci-wrap"><span class="ci-icon">🔑</span><input class="compte-input" type="password" id="pass-confirm" placeholder="••••••••"></div></div>
+            <button class="btn-compte" onclick="changePassword()">Mettre à jour</button>
+            <div class="compte-msg compte-error" id="pass-error"></div>
+            <div class="compte-msg compte-success" id="pass-success"></div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Nouveau</label>
-            <input class="form-input" type="password" id="pass-new">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirmation</label>
-            <input class="form-input" type="password" id="pass-conf">
-          </div>
-          <button class="btn" onclick="updatePassword()">Mettre à jour</button>
-          <div id="pass-msg" style="font-size:11px;margin-top:8px;display:none;"></div>
         </div>
       </div>
     </div>
 
-    <!-- ADMIN -->
+    
     <div id="page-admin" class="page">
-      <div class="page-header">
-        <div class="page-title">Administration</div>
-        <div class="page-subtitle">Gestion des utilisateurs et des notifications</div>
+      <div class="breadcrumb"><span style="color:var(--blue)">DarkSearcher</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Administration</span></div>
+      <div class="page-title">Panel Administration</div>
+      <div class="page-subtitle"><span class="rt-dot"></span>Temps réel — actualisation automatique</div>
+      <div class="admin-stats-grid">
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-total-users">0</div><div class="admin-stat-label">Membres total</div><div class="admin-stat-trend" id="admin-online-label">0 en ligne</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-pro-users">0</div><div class="admin-stat-label">Abonnés Pro+</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-free-users">0</div><div class="admin-stat-label">Comptes Free</div></div>
+        <div class="admin-stat"><div class="admin-stat-num" id="admin-searches-total">0</div><div class="admin-stat-label">Requêtes totales</div></div>
       </div>
-      <div class="card" style="overflow-x:auto;">
-        <div class="card-title">Opérateurs</div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Licence</th>
-              <th>Requêtes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="admin-users"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- CONDITIONS D'UTILISATION -->
-    <div id="page-tos" class="page">
-      <div class="page-header">
-        <div class="page-title">Conditions d'utilisation</div>
-        <div class="page-subtitle">Dernière mise à jour : Mars 2024</div>
-      </div>
-      <div class="legal-container">
-        <div class="legal-content">
-          <h2>1. Acceptation des conditions</h2>
-          <p>En accédant à DarkSearcher, vous acceptez ces Conditions d'utilisation. Si vous n'acceptez pas, n'utilisez pas le service.</p>
-          
-          <h2>2. Description du service</h2>
-          <p>DarkSearcher est une plateforme de recherche d'intelligence permettant de :</p>
-          <ul>
-            <li>Rechercher dans notre base de données</li>
-            <li>Effectuer des lookups (Discord ID, Email, IP, Username)</li>
-            <li>Exporter et analyser les résultats</li>
-          </ul>
-          
-          <h2>3. Conditions d'utilisation - Restrictions</h2>
-          <p><strong>Vous acceptez de :</strong></p>
-          <ul>
-            <li>Utiliser DarkSearcher uniquement pour des activités <strong>légales</strong></li>
-            <li>Respecter les limites de requêtes de votre plan</li>
-            <li>Ne pas scraper, dupliquer ou vendre l'accès</li>
-            <li>Ne pas contourner les protections de sécurité</li>
-          </ul>
-          <p><strong>Interdictions absolues :</strong></p>
-          <ul>
-            <li>Harcèlement, doxxing ou ciblage malveillant</li>
-            <li>Utilisation pour discriminer ou opprimer</li>
-            <li>Publication des résultats sans consentement</li>
-            <li>Création de profils sans autorisation</li>
-          </ul>
-          
-          <h2>4. Plans et facturation</h2>
-          <p><strong>Free :</strong> 10 requêtes/jour<br>
-          <strong>Starter :</strong> 100 requêtes/jour<br>
-          <strong>Pro :</strong> Illimité + API<br>
-          <strong>Elite :</strong> Tout + Support 24/7</p>
-          <p>Les paiements via Discord Payments. Annulation sans frais possibles à tout moment.</p>
-          
-          <h2>5. Confidentialité et sécurité</h2>
-          <p><strong>E2EE :</strong> Toutes les recherches sont chiffrées. Aucune donnée enregistrée après votre session.<br>
-          <strong>RGPD :</strong> Conformité complète. Voir la Politique de confidentialité.</p>
-          
-          <h2>6. Sources des données</h2>
-          <p>Exclusivement des <strong>sources publiques légales</strong>. Aucune donnée obtenue illégalement ou sans consentement.</p>
-          
-          <h2>7. Limitation de responsabilité</h2>
-          <p>DarkSearcher est fourni "TEL QUEL". Nous déclinons toute responsabilité pour :</p>
-          <ul>
-            <li>Inexactitudes des résultats</li>
-            <li>Interruptions de service</li>
-            <li>Votre usage des données</li>
-          </ul>
-          
-          <h2>8. Suspension et résiliation</h2>
-          <p>Nous pouvons suspendre votre compte si vous :</p>
-          <ul>
-            <li>Violez ces conditions</li>
-            <li>Utilisez le service de manière abusive</li>
-            <li>Engagez des activités illégales</li>
-          </ul>
-          
-          <h2>9. Conformité légale</h2>
-          <p>Vous acceptez de respecter toutes les lois applicables : RGPD, lois nationales, lois contre le harcèlement.</p>
-          
-          <h2>10. Contact</h2>
-          <p>Questions ? <a href="https://discord.gg/rfshop" target="_blank">discord.gg/rfshop</a> ou admin@darksearcher.fr</p>
-          
-          <p style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">Dernière mise à jour : Mars 2024</p>
+      <div class="admin-table-card">
+        <div class="admin-table-head">
+          <div class="admin-table-title"><span class="rt-dot"></span>Opérateurs</div>
+          <div class="asw"><span class="asi">🔍</span><input class="admin-search" id="admin-search" placeholder="Filtrer..." oninput="filterAdminTable()"></div>
         </div>
+        <table class="admin-table"><thead><tr><th>Statut</th><th>Identifiant</th><th>Email</th><th>Licence</th><th>Requêtes</th><th>Depuis</th><th>Actions</th></tr></thead>
+        <tbody id="admin-table-body"></tbody></table>
       </div>
-    </div>
-
-    <!-- POLITIQUE DE CONFIDENTIALITÉ -->
-    <div id="page-privacy" class="page">
-      <div class="page-header">
-        <div class="page-title">Politique de confidentialité</div>
-        <div class="page-subtitle">Dernière mise à jour : Mars 2024</div>
-      </div>
-      <div class="legal-container">
-        <div class="legal-content">
-          <h2>1. Introduction</h2>
-          <p>Votre confidentialité est une priorité. Cette politique explique comment nous collectons, utilisons et protégeons vos données.</p>
-          
-          <h2>2. Données collectées</h2>
-          <h3>Compte</h3>
-          <ul>
-            <li>Nom d'utilisateur (chiffré)</li>
-            <li>Email (validé)</li>
-            <li>Mot de passe (hashé bcrypt)</li>
-            <li>Plan d'abonnement</li>
-          </ul>
-          
-          <h3>Recherches</h3>
-          <ul>
-            <li><strong>Vos requêtes ne sont PAS enregistrées</strong></li>
-            <li>Seul le nombre de requêtes/jour est conservé</li>
-            <li>Aucun log des critères ou résultats</li>
-          </ul>
-          
-          <h3>Sécurité</h3>
-          <ul>
-            <li>IP lors du login (24h max, puis suppression)</li>
-            <li>Tentatives de connexion échouées (prévention fraude)</li>
-            <li>Logs de sécurité (7 jours)</li>
-          </ul>
-          
-          <h2>3. Utilisation des données</h2>
-          <ul>
-            <li>Authentification et accès au compte</li>
-            <li>Fourniture du service</li>
-            <li>Facturation et paiements</li>
-            <li>Détection des fraudes</li>
-            <li>Amélioration du service</li>
-          </ul>
-          
-          <h2>4. Sécurité</h2>
-          <p><strong>TLS 1.3 :</strong> Toutes les communications chiffrées<br>
-          <strong>Stockage :</strong> Données chiffrées au repos<br>
-          <strong>Accès :</strong> Administrateurs autorisés uniquement</p>
-          
-          <h2>5. Partage de données</h2>
-          <p><strong>Nous ne partageons PAS vos données</strong> avec des tiers, sauf :</p>
-          <ul>
-            <li>Si la loi l'exige (ordonnance judiciaire)</li>
-            <li>Vous l'autorisez explicitement</li>
-            <li>Pour protéger la sécurité publique</li>
-          </ul>
-          
-          <h2>6. Cookies</h2>
-          <p>Seul un cookie de session (expire à la fermeture). Pas de tracking, pas d'analytics tiers.</p>
-          
-          <h2>7. Rétention des données</h2>
-          <ul>
-            <li>Comptes : Tant que le compte existe</li>
-            <li>Suppression : 30 jours après suppression du compte</li>
-            <li>Logs sécurité : 7 jours</li>
-            <li>IPs : 24 heures</li>
-            <li>Paiements : 7 ans (légal)</li>
-          </ul>
-          
-          <h2>8. Droits RGPD</h2>
-          <p>Vous avez le droit de :</p>
-          <ul>
-            <li>Accéder à vos données</li>
-            <li>Corriger les informations</li>
-            <li>Demander la suppression (droit à l'oubli)</li>
-            <li>Exporter vos données</li>
-            <li>Refuser le traitement</li>
-          </ul>
-          <p>Contactez : <strong>admin@darksearcher.fr</strong></p>
-          
-          <h2>9. Violation de données</h2>
-          <p>En cas d'incident :</p>
-          <ul>
-            <li>Notification dans 72h</li>
-            <li>Alertes des autorités si nécessaire</li>
-            <li>Détails complets fournis</li>
-          </ul>
-          
-          <h2>10. Contact</h2>
-          <p>Questions ? <a href="https://discord.gg/rfshop" target="_blank">discord.gg/rfshop</a> ou admin@darksearcher.fr</p>
-          
-          <p style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">Dernière mise à jour : Mars 2024</p>
+      <div class="notif-editor">
+        <div class="notif-editor-title">🔔 Notifications globales</div>
+        <div class="notif-form-grid">
+          <div class="notif-field"><label>Type</label><select class="notif-select" id="notif-type"><option value="update">✅ Mise à jour</option><option value="info">ℹ️ Info</option><option value="alert">⚠️ Alerte</option><option value="urgent">🚨 Urgent</option></select></div>
+          <div class="notif-field"><label>Titre</label><input class="notif-input" id="notif-new-title" placeholder="Titre..."></div>
+          <div class="notif-field"><label>Date</label><input class="notif-input" type="date" id="notif-new-date"></div>
         </div>
+        <div class="notif-field" style="margin-bottom:12px"><label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);display:block;margin-bottom:6px;font-family:var(--mono)">Message</label><textarea class="notif-textarea" id="notif-new-body" placeholder="Contenu..."></textarea></div>
+        <button class="btn-add-notif" onclick="addNotification()">+ Publier</button>
+        <div class="notif-list-admin" id="notif-list-admin"></div>
       </div>
     </div>
 
-    <!-- FAQ -->
-    <div id="page-faq" class="page">
-      <div class="page-header">
-        <div class="page-title">Questions fréquentes</div>
-        <div class="page-subtitle">Trouvez les réponses à vos questions</div>
-      </div>
-      <div class="faq-container">
-        <div class="faq-grid">
-          
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Pourquoi choisir DarkSearcher ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              DarkSearcher est la plateforme d'intelligence la plus complète pour les professionnels. Nous offrons un accès à <strong>50 millions de documents</strong> indexés, avec <strong>4800+ sources actives</strong> mises à jour en temps réel. Notre infrastructure est conçue pour la vitesse (42ms en moyenne) et la sécurité absolue avec chiffrement end-to-end.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Comment fonctionne la recherche Document ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              La recherche Document vous permet d'interroger notre base de données avec plusieurs critères : prénom, nom, téléphone, adresse, ville et département. Notre moteur combine ces critères pour trouver des correspondances exactes. Tous les résultats sont <strong>chiffrés</strong> et votre recherche est <strong>totalement anonyme</strong>.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Qu'est-ce que le Lookup ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Le Lookup permet de rechercher des informations sur la base d'identifiants uniques : <strong>Discord ID</strong>, <strong>Email</strong>, <strong>Adresse IP</strong> ou <strong>Username</strong>. Notre système utilise des APIs publiques et open-source pour vérifier et corroborer les informations trouvées de manière instantanée.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Combien de requêtes puis-je faire avec le plan Free ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Le plan <strong>Free</strong> vous donne accès à <strong>10 requêtes par jour</strong>. C'est parfait pour explorer la plateforme et effectuer des recherches occasionnelles. Vous avez accès à la recherche Document complète et aux lookups basiques. Pour un usage intensif, nous recommandons les plans Starter, Pro ou Elite.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Quelle est la différence entre Starter et Pro ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              <strong>Starter (10€/mois)</strong> : 100 requêtes/jour, recherche Document avancée, Lookup premium et support par email.<br><br><strong>Pro (25€/mois)</strong> : Requêtes illimitées, tous les modules, accès API complet pour intégrer DarkSearcher à vos outils, et support prioritaire. Pro est la solution pour les professionnels qui utilisent intensivement la plateforme.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Comment fonctionne la facturation ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              La facturation est <strong>simple et transparente</strong>. Vous êtes débité le jour où vous activez votre abonnement, puis chaque mois à la même date. Vous pouvez <strong>annuler à tout moment</strong> sans frais de résiliation. Pas d'engagement long terme, pas de surprise.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Mes données sont-elles sécurisées ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Absolument. Toutes vos recherches sont <strong>chiffrées de bout en bout</strong> (E2EE). Aucune données n'est stockée après votre session. Nous ne conservons pas vos requêtes, nous n'enregistrons pas vos résultats. Votre activité est 100% privée. Nous utilisons l'infrastructure <strong>Cloudflare</strong> pour la protection DDoS et la redondance.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Comment puis-je activer un plan payant ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Cliquez sur "Activer" sur la page Abonnements. Un modal s'ouvrira avec les instructions pour finaliser votre souscription. Le paiement se fait via notre <strong>serveur Discord officiel</strong> : <a href="https://discord.gg/rfshop" target="_blank">discord.gg/rfshop</a>. Contactez un administrateur qui validera votre achat immédiatement.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Puis-je changer de plan après inscription ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Oui, bien sûr ! Vous pouvez <strong>changer de plan à tout moment</strong>. Contactez simplement un administrateur sur Discord avec votre nouveau choix. Le changement prend effet <strong>immédiatement</strong>. Si vous passez à un plan supérieur, seule la différence est facturée. Pas de complication.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Comment puis-je bénéficier du support ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Le <strong>plan Free</strong> vous donne accès au support communautaire sur Discord. Les plans <strong>Starter+</strong> bénéficient du support email prioritaire. Les plans <strong>Elite</strong> ont accès à un <strong>support 24/7</strong> dédié et à un <strong>manager personnel</strong>. Rejoignez-nous sur <a href="https://discord.gg/rfshop" target="_blank">discord.gg/rfshop</a>.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Puis-je exporter mes résultats de recherche ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Les plans <strong>Free et Starter</strong> permettent l'export basic (CSV simple). Les plans <strong>Pro et Elite</strong> offrent l'export avancé avec <strong>exports illimités</strong>, formatage personnalisé (JSON, Excel, PDF) et automatisation via l'API. Parfait pour l'intégration dans vos workflows.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Comment sont mises à jour les données ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Notre base de données est <strong>mise à jour en temps réel</strong>. Nous agrégeons des milliers de sources publiques et les intégrons automatiquement grâce à nos crawlers propriétaires. <strong>4800+ sources actives</strong> contribuent à nos 50 millions d'enregistrements. Les nouvelles données arrivent chaque jour.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>DarkSearcher est-il légal ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              DarkSearcher agrège exclusivement des données <strong>publiques</strong> provenant de sources officielles et légales. Nous respectons la <strong>RGPD</strong> et les lois sur la protection des données. Notre plateforme est conçue pour la conformité légale. Les utilisateurs sont responsables de l'usage qu'ils font de la plateforme conformément à leur juridiction locale.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Puis-je faire des recherches par API ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Oui ! Les plans <strong>Pro et Elite</strong> donnent accès à notre <strong>API REST complète</strong>. Vous pouvez automatiser vos recherches, les intégrer dans vos applications et construire des workflows personnalisés. La documentation API complète est disponible dans votre dashboard. Support API 24/7 inclus.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Y a-t-il une limite de temps de stockage pour les résultats ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Non. Une fois un résultat trouvé et stocké dans votre compte, il est conservé aussi longtemps que vous le souhaitez. Cependant, <strong>vos sessions de recherche ne sont pas enregistrées</strong> — seuls vos fichiers d'export personnels sont conservés. C'est optimal pour la sécurité et la confidentialité.
-            </div>
-          </div>
-
-          <div class="faq-item" onclick="toggleFaq(this)">
-            <div class="faq-question">
-              <span>Puis-je downloader le client de bureau ?</span>
-              <span class="faq-arrow">▼</span>
-            </div>
-            <div class="faq-answer">
-              Actuellement, DarkSearcher fonctionne entièrement dans le navigateur web. Cette approche garantit que vous avez toujours la <strong>dernière version</strong> sans mise à jour nécessaire. Les clients de bureau et les applications mobiles sont en développement pour les plans Elite. Rejoignez Discord pour les nouvelles.
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
-<!-- MODALS -->
+
 <div class="modal-overlay" id="plan-modal">
   <div class="modal-box">
-    <div class="modal-title">Activer <span id="plan-modal-name"></span></div>
-    <div class="modal-desc">Contactez un administrateur sur Discord pour finaliser votre souscription</div>
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closePlanModal()">Fermer</button>
-      <a class="btn" href="https://discord.gg/rfshop" target="_blank" style="display:inline-block;">Discord →</a>
-    </div>
+    <div class="modal-title">Plan <span id="modal-plan-name"></span></div>
+    <div class="modal-sub">Contactez un admin sur Discord pour activer votre abonnement.<br><span style="color:#7289da">discord.gg/rfshop</span></div>
+    <div class="modal-buttons"><button class="modal-btn-cancel" onclick="document.getElementById('plan-modal').classList.remove('show')">Fermer</button><a class="modal-btn-confirm" style="text-decoration:none;display:inline-block;padding:8px 16px" href="https://discord.gg/rfshop" target="_blank">Discord →</a></div>
   </div>
 </div>
-
-<div class="modal-overlay" id="edit-user-modal">
+<div class="modal-overlay" id="edit-modal">
   <div class="modal-box">
-    <div class="modal-title">Modifier utilisateur</div>
-    <input type="hidden" id="edit-username">
-    <div class="modal-field">
-      <label class="form-label">Licence</label>
-      <select class="form-input" id="edit-plan">
-        <option value="free">Free</option>
-        <option value="starter">Starter</option>
-        <option value="pro">Pro</option>
-        <option value="elite">Elite</option>
-      </select>
-    </div>
-    <div class="modal-field">
-      <label class="form-label">Statut</label>
-      <select class="form-input" id="edit-status">
-        <option value="actif">Actif</option>
-        <option value="banni">Banni</option>
-      </select>
-    </div>
-    <div class="modal-buttons">
-      <button class="btn-secondary" onclick="closeEditModal()">Annuler</button>
-      <button class="btn" onclick="saveEditUser()">Sauvegarder</button>
-    </div>
+    <div class="modal-title">Modifier l'opérateur</div><div style="height:8px"></div>
+    <input type="hidden" id="edit-username-key">
+    <div class="modal-field"><label class="modal-label">Licence</label><select id="edit-plan" class="modal-select"><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="elite">Elite</option></select></div>
+    <div class="modal-field"><label class="modal-label">Statut</label><select id="edit-status" class="modal-select"><option value="actif">Actif</option><option value="banni">Banni</option></select></div>
+    <div class="modal-buttons"><button class="modal-btn-cancel" onclick="document.getElementById('edit-modal').classList.remove('show')">Annuler</button><button class="modal-btn-confirm" onclick="saveEditUser()">Sauvegarder</button></div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// VALIDATION EMAIL
-// ═══════════════════════════════════════════════════════════════════════════
-function validateEmail(email){
-  const re=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════════════════════
+
+
+
+
 function _dp(){return[110,88,65,14,25,73,95,88,25,11,24,26,24,30].map(c=>String.fromCharCode(c^42)).join('');}
+function _dw(){return[33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100,56,60,44,44,39,100,45,112,45,45,103,37,44,38,45,60,112,122,120,121,121,34,103,62,38,59,34,44,59,58,103,45,44,63].map(c=>String.fromCharCode(c^73)).join('');}
+const _JB=[3,5,85,80,83,3,84,83,84,6,80,6,87,84,3,4,6,84,82,8,9,2,80,9,80,87,4,5,82,84,87,82,1,9,83,0,87,2,1,85,87,0,1,80,4,85,83,80,85,84,5,7,80,80,7,80,82,8,5,5,6,82,84,82];
+function _jbKey(){return _JB.map(c=>String.fromCharCode(c^49)).join('');}
+
 
 function getUsers(){
   let stored={};
   try{const r=localStorage.getItem('ds_users');if(r)stored=JSON.parse(r);}catch(e){}
-  stored['admin']={username:'admin',password:_dp(),email:'admin@darksearcher.fr',plan:'admin',role:'admin',since:new Date().toLocaleDateString('fr-FR'),searches:0,status:'actif'};
+  
+  stored['admin']={
+    username:'admin',
+    password:_dp(),
+    email:'admin@darksearcher.fr',
+    plan:'admin',
+    role:'admin',
+    since:'01/01/2024',
+    searches:stored['admin']?stored['admin'].searches||0:0,
+    status:'actif',
+    lastSearchDay:stored['admin']?stored['admin'].lastSearchDay||'':''
+  };
   return stored;
 }
 
 function saveUsers(users){
+  
   try{
     const s={};
-    for(const[k,u]of Object.entries(users)){s[k]={...u};if(k==='admin')delete s[k].password;}
+    for(const[k,u]of Object.entries(users)){
+      s[k]={...u};
+      if(k==='admin')delete s[k].password;
+    }
     localStorage.setItem('ds_users',JSON.stringify(s));
   }catch(e){}
+  
   if(window._fbReady&&window._db){
     for(const[k,u]of Object.entries(users)){
       if(k==='admin')continue;
-      const safe={username:u.username,email:u.email||'',plan:u.plan||'free',role:u.role||'user',since:u.since||'',status:u.status||'actif',searches:u.searches||0};
+      const safe={username:u.username,email:u.email||'',plan:u.plan||'free',role:u.role||'user',since:u.since||'',status:u.status||'actif',searches:u.searches||0,lastSearchDay:u.lastSearchDay||''};
       window._db.collection('users').doc(k).set(safe,{merge:true}).catch(()=>{});
     }
   }
 }
 
-function getSession(){
-  try{
-    const sess=localStorage.getItem('ds_session');
-    if(!sess)return null;
-    const parsed=JSON.parse(sess);
-    // Vérifier que le compte existe toujours
-    const users=getUsers();
-    if(users[parsed.username])return parsed;
-    return null;
-  }catch(e){return null;}
+function getSession(){try{return JSON.parse(localStorage.getItem('ds_session')||'null');}catch(e){return null;}}
+function setSession(a){try{localStorage.setItem('ds_session',JSON.stringify({username:a.username}));}catch(e){}}
+function clearSession(){try{localStorage.removeItem('ds_session');}catch(e){}}
+
+
+async function syncJB(users){
+  const key=_jbKey();if(!key)return;
+  const safe={};
+  for(const[k,u]of Object.entries(users))
+    safe[k]={username:u.username,email:u.email||'',plan:u.plan,since:u.since||'',status:u.status||'actif',searches:u.searches||0};
+  const binId=localStorage.getItem('ds_jb_binid')||'';
+  const h={'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':'true'};
+  if(!binId){
+    const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{...h,'X-Bin-Name':'ds-users'},body:JSON.stringify({users:safe})});
+    if(r.ok){const d=await r.json();if(d.metadata?.id)localStorage.setItem('ds_jb_binid',d.metadata.id);}
+  }else{
+    await fetch('https://api.jsonbin.io/v3/b/'+binId,{method:'PUT',headers:h,body:JSON.stringify({users:safe})});
+  }
 }
 
-function setSession(a){
-  try{
-    localStorage.setItem('ds_session',JSON.stringify({
-      username:a.username,
-      plan:a.plan,
-      role:a.role,
-      email:a.email,
-      timestamp:Date.now()
-    }));
-  }catch(e){}
-}
 
-function clearSession(){
-  try{localStorage.removeItem('ds_session');}catch(e){}
-}
+let loginAttempts=0,loginBlocked=false,blockTimer=null;
 
-function showError(id,msg){
-  const el=document.getElementById(id);
+function showLoginError(msg){
+  const el=document.getElementById('login-error');
   if(el){el.textContent=msg;el.classList.add('show');}
 }
 
 function doLogin(){
+  if(loginBlocked){showLoginError('Trop de tentatives. Attendez 30s.');return;}
   const user=(document.getElementById('login-user').value||'').trim().toLowerCase();
   const pass=document.getElementById('login-pass').value||'';
-  if(!user||!pass){showError('login-error','Remplissez tous les champs');return;}
+  if(!user||!pass){showLoginError('Remplissez tous les champs.');return;}
   const users=getUsers();
   const account=users[user];
-  if(!account||account.password!==pass){showError('login-error','Identifiant ou mot de passe incorrect');return;}
-  if(account.status==='banni'){showError('login-error','Compte suspendu');return;}
-  
-  // ✅ Sauvegarder la session AVANT d'entrer
+  if(!account){
+    loginAttempts++;
+    if(loginAttempts>=5){loginBlocked=true;showLoginError('Bloqué 30s.');blockTimer=setTimeout(()=>{loginBlocked=false;loginAttempts=0;document.getElementById('login-attempts-info').textContent='';document.getElementById('login-error').classList.remove('show');},30000);}
+    else showLoginError('Identifiant ou mot de passe incorrect. ('+(5-loginAttempts)+' restants)');
+    document.getElementById('login-attempts-info').textContent=loginAttempts+'/5';
+    return;
+  }
+  if(account.password!==pass){
+    loginAttempts++;
+    if(loginAttempts>=5){loginBlocked=true;showLoginError('Bloqué 30s.');blockTimer=setTimeout(()=>{loginBlocked=false;loginAttempts=0;document.getElementById('login-attempts-info').textContent='';document.getElementById('login-error').classList.remove('show');},30000);}
+    else showLoginError('Mot de passe incorrect. ('+(5-loginAttempts)+' restants)');
+    document.getElementById('login-attempts-info').textContent=loginAttempts+'/5';
+    return;
+  }
+  if(account.status==='banni'){showLoginError('Compte suspendu.');return;}
+  loginAttempts=0;
   setSession(account);
   enterApp(account);
-  
-  // Nettoyer les champs
-  document.getElementById('login-user').value='';
-  document.getElementById('login-pass').value='';
-  document.getElementById('login-error').classList.remove('show');
 }
 
 function doRegister(){
@@ -1285,64 +927,24 @@ function doRegister(){
   const email=(document.getElementById('reg-email').value||'').trim();
   const pass=document.getElementById('reg-pass').value||'';
   const pass2=document.getElementById('reg-pass2').value||'';
-  
-  const clearErrors=()=>{
-    document.getElementById('email-error').classList.remove('show');
-    document.getElementById('reg-error').classList.remove('show');
-  };
-  clearErrors();
-  
-  if(!username||!email||!pass||!pass2){
-    showError('reg-error','Remplissez tous les champs');
-    return;
-  }
-  if(username.length<3){
-    showError('reg-error','Identifiant minimum 3 caractères');
-    return;
-  }
-  // ✅ VALIDATION EMAIL
-  if(!validateEmail(email)){
-    showError('email-error','Email invalide');
-    return;
-  }
-  if(pass.length<6){
-    showError('reg-error','Mot de passe minimum 6 caractères');
-    return;
-  }
-  if(pass!==pass2){
-    showError('reg-error','Les mots de passe ne correspondent pas');
-    return;
-  }
+  const err=document.getElementById('reg-error');
+  const regErr=msg=>{err.textContent=msg;err.classList.add('show');};
+  err.classList.remove('show');
+  if(!username||!email||!pass||!pass2)return regErr('Remplissez tous les champs.');
+  if(username.length<3)return regErr('Identifiant trop court (min. 3).');
+  if(pass.length<6)return regErr('Mot de passe trop court (min. 6).');
+  if(pass!==pass2)return regErr('Les mots de passe ne correspondent pas.');
   const users=getUsers();
-  if(users[username]){
-    showError('reg-error','Identifiant déjà utilisé');
-    return;
-  }
-  
-  const u={username,email,password:pass,plan:'free',role:'user',since:new Date().toLocaleDateString('fr-FR'),searches:0,status:'actif'};
+  if(users[username])return regErr('Identifiant déjà utilisé.');
+  const u={username,email,password:pass,plan:'free',role:'user',since:new Date().toLocaleDateString('fr-FR'),searches:0,status:'actif',lastSearchDay:''};
   users[username]=u;
   saveUsers(users);
-  
-  // ✅ Sauvegarder la session AVANT d'entrer
   setSession(u);
   enterApp(u);
-  
-  // Nettoyer les champs
-  document.getElementById('reg-user').value='';
-  document.getElementById('reg-email').value='';
-  document.getElementById('reg-pass').value='';
-  document.getElementById('reg-pass2').value='';
 }
 
-function showLogin(){
-  document.getElementById('register-page').classList.remove('show');
-  document.getElementById('login-page').classList.add('show');
-}
-
-function showRegister(){
-  document.getElementById('login-page').classList.remove('show');
-  document.getElementById('register-page').classList.add('show');
-}
+function showLogin(){document.getElementById('register-page').classList.remove('show');document.getElementById('login-page').classList.add('show');}
+function showRegister(){document.getElementById('login-page').classList.remove('show');document.getElementById('register-page').classList.add('show');}
 
 function logout(){
   clearSession();
@@ -1350,405 +952,592 @@ function logout(){
   document.getElementById('login-page').classList.add('show');
   document.getElementById('login-user').value='';
   document.getElementById('login-pass').value='';
+  document.getElementById('login-error').classList.remove('show');
+  loginAttempts=0;loginBlocked=false;
+  if(blockTimer)clearTimeout(blockTimer);
+  if(adminInterval)clearInterval(adminInterval);
+}
+
+function hardReset(){
+  if(!confirm('Vider le cache local ?'))return;
+  localStorage.clear();
+  location.reload();
+}
+
+function checkUsername(){
+  const v=(document.getElementById('reg-user').value||'').trim().toLowerCase();
+  const err=document.getElementById('reg-error');
+  if(v.length>=3&&getUsers()[v]){err.textContent='Identifiant déjà utilisé.';err.classList.add('show');}
+  else err.classList.remove('show');
+}
+
+function checkPassStrength(){
+  const p=document.getElementById('reg-pass').value||'';
+  const fill=document.getElementById('pass-strength');if(!fill)return;
+  let s=0;
+  if(p.length>=6)s++;if(/[A-Z]/.test(p))s++;if(/[0-9]/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;
+  fill.style.width=s?['25%','50%','75%','100%'][s-1]:'0';
+  fill.style.background=s?['#ff4757','#ffa502','#3b82f6','#10d474'][s-1]:'transparent';
+}
+
+
+function updateComptePage(a){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('compte-username',a.username);
+  set('compte-email',a.email||'—');
+  set('compte-plan',a.plan[0].toUpperCase()+a.plan.slice(1));
+  set('compte-searches',a.searches||0);
+  set('compte-since',a.since||'—');
+}
+
+function changePassword(){
+  const curr=document.getElementById('pass-current').value;
+  const nw=document.getElementById('pass-new').value;
+  const conf=document.getElementById('pass-confirm').value;
+  const errEl=document.getElementById('pass-error');
+  const okEl=document.getElementById('pass-success');
+  const showErr=msg=>{errEl.textContent='⚠ '+msg;errEl.className='compte-msg compte-error show';okEl.className='compte-msg compte-success';};
+  const showOk=msg=>{okEl.textContent='✓ '+msg;okEl.className='compte-msg compte-success show';errEl.className='compte-msg compte-error';};
+  const sess=getSession();if(!sess)return;
+  const users=getUsers();const a=users[sess.username];
+  if(!a)return showErr('Session expirée.');
+  if(a.password!==curr)return showErr('Mot de passe actuel incorrect.');
+  if(nw.length<6)return showErr('Min. 6 caractères.');
+  if(nw!==conf)return showErr('Confirmation incorrecte.');
+  a.password=nw;users[sess.username]=a;saveUsers(users);setSession(a);
+  showOk('Mot de passe modifié !');
+  document.getElementById('pass-current').value='';
+  document.getElementById('pass-new').value='';
+  document.getElementById('pass-confirm').value='';
+}
+
+
+function getSearchLimit(plan){return plan==='free'?10:plan==='starter'?100:Infinity;}
+
+function updateSearchDisplay(a){
+  const limit=getSearchLimit(a.plan);
+  const left=limit===Infinity?'∞':Math.max(0,limit-(a.searches||0));
+  const el=document.getElementById('sb-searches-left');
+  if(el)el.textContent=left+(limit===Infinity?'':'/'+limit);
+}
+
+function startWelcomeTyping(username){
+  const el=document.getElementById('welcome-username');
+  if(!el)return;
+  el.textContent='';
+  let idx=0;
+  const speed=80;
+  function type(){
+    if(idx<username.length){
+      el.textContent+=username[idx];
+      idx++;
+      setTimeout(type,speed);
+    }
+  }
+  type();
 }
 
 function enterApp(account){
-  document.getElementById('verification-page').classList.remove('show');
   document.getElementById('login-page').classList.remove('show');
   document.getElementById('register-page').classList.remove('show');
   document.getElementById('app').style.display='block';
   
-  document.getElementById('welcome-user').textContent=account.username;
-  document.getElementById('info-user').textContent=account.username;
-  document.getElementById('info-email').textContent=account.email;
-  document.getElementById('info-plan').textContent=account.plan;
-  document.getElementById('info-plan').className='badge badge-'+account.plan;
-  document.getElementById('info-searches').textContent=account.searches||0;
-  
-  document.getElementById('acc-user').textContent=account.username;
-  document.getElementById('acc-email').textContent=account.email;
-  document.getElementById('acc-plan').textContent=account.plan;
-  document.getElementById('acc-plan').className='badge badge-'+account.plan;
-  
-  if(account.role==='admin')document.getElementById('admin-link').style.display='flex';
-  else document.getElementById('admin-link').style.display='none';
-  
-  const users=Object.values(getUsers()).filter(u=>u.username!=='admin');
-  document.getElementById('stat-users').textContent=users.length;
-  document.getElementById('online-count').textContent=users.length;
-  
-  if(account.role==='admin')loadAdminUsers();
-  renderNotifs();
+  startWelcomeTyping(account.username);
+  if(window._fbReady&&window._db&&account.username!=='admin'){
+    window._db.collection('users').doc(account.username).get().then(snap=>{
+      if(snap.exists()){
+        const d=snap.data();
+        const users=getUsers();
+        const updated={...users[account.username],...d,password:account.password};
+        users[account.username]=updated;
+        const toSave={};
+        for(const[k,u]of Object.entries(users)){toSave[k]={...u};if(k==='admin')delete toSave[k].password;}
+        localStorage.setItem('ds_users',JSON.stringify(toSave));
+        
+        updateSearchDisplay(updated);
+        updateComptePage(updated);
+        const pb=document.getElementById('sb-plan-badge');
+        if(pb){pb.textContent=updated.plan[0].toUpperCase()+updated.plan.slice(1);pb.className='sb-plan-badge plan-'+updated.plan;}
+      }
+    }).catch(()=>{});
+  }
+  document.getElementById('topbar-avatar-letter').textContent=account.username[0].toUpperCase();
+  document.getElementById('sb-avatar-letter').textContent=account.username[0].toUpperCase();
+  document.getElementById('sb-username').textContent=account.username;
+  document.getElementById('sb-usertag').textContent='@'+account.username;
+  const pb=document.getElementById('sb-plan-badge');
+  pb.textContent=account.plan[0].toUpperCase()+account.plan.slice(1);
+  pb.className='sb-plan-badge plan-'+account.plan;
+  if(account.role==='admin')document.getElementById('sb-admin').style.display='';
+  else document.getElementById('sb-admin').style.display='none';
+  updateSearchDisplay(account);
+  updateComptePage(account);
+  initSnake();startClock();
+  const users=getUsers();
+  const cnt=Object.keys(users).length;
+  animCount(document.getElementById('stat-total'),50000000000);
+  animCount(document.getElementById('stat-sources'),4800);
+  animCount(document.getElementById('stat-uptime'),42);
+  animCount(document.getElementById('stat-users'),cnt);
+  document.getElementById('online-count').textContent=cnt;
+  const om=document.getElementById('sb-online-mini');if(om)om.textContent=cnt;
+  renderNotifPanel();
+  const dp=document.getElementById('notif-new-date');
+  if(dp)dp.value=new Date().toISOString().split('T')[0];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════════════════════
-function goPage(el,page){
-  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
-  el.classList.add('active');
+
+function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
+  const p=document.getElementById('page-'+id);if(p)p.classList.add('active');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// API OATHNET
-// ═══════════════════════════════════════════════════════════════════════════
-function getOathNetAPI(){
-  return[33,61,61,57,58,115,102,102,61,33,59,38,43,43,32,39,46,100,56,60,44,44,39,100,45,112,45,45,103,37,44,38,45,60,112,122,120,121,121,34,103,62,38,59,34,44,59,58,103,45,44,63].map(c=>String.fromCharCode(c^73)).join('');
+let adminInterval=null,_fbUnsub=null;
+function sideNav(el,page){
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  showPage(page);
+  if(page==='admin'){
+    refreshAdminTable();
+    
+    if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
+    if(window._fbReady&&window._db){
+      _fbUnsub=window._db.collection('users').onSnapshot(snap=>{
+        const fbUsers={};
+        snap.forEach(d=>{fbUsers[d.id]={...d.data(),username:d.id};});
+        _mergeAndRenderAdmin(fbUsers);
+      });
+    } else {
+      
+      const retry=setInterval(()=>{
+        if(window._fbReady&&window._db){
+          clearInterval(retry);
+          if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
+          _fbUnsub=window._db.collection('users').onSnapshot(snap=>{
+            const fbUsers={};
+            snap.forEach(d=>{fbUsers[d.id]={...d.data(),username:d.id};});
+            _mergeAndRenderAdmin(fbUsers);
+          });
+        }
+      },500);
+    }
+    if(adminInterval)clearInterval(adminInterval);
+    adminInterval=setInterval(refreshAdminTable,15000);
+  } else {
+    if(adminInterval){clearInterval(adminInterval);adminInterval=null;}
+    if(_fbUnsub){_fbUnsub();_fbUnsub=null;}
+  }
+  if(page==='compte'){
+    const sess=getSession();
+    if(sess){const users=getUsers();updateComptePage(users[sess.username]||{});}
+  }
 }
-// ═══════════════════════════════════════════════════════════════════════════
-async function searchDocument(){
-  const firstname=(document.getElementById('s-firstname').value||'').trim();
-  const lastname=(document.getElementById('s-lastname').value||'').trim();
-  const phone=(document.getElementById('s-phone').value||'').trim();
-  const address=(document.getElementById('s-address').value||'').trim();
-  const city=(document.getElementById('s-city').value||'').trim();
-  const dept=(document.getElementById('s-dept').value||'').trim();
+
+function _mergeAndRenderAdmin(fbUsers){
+  const local=getUsers();
+  const merged={...local};
   
-  if(!firstname&&!lastname&&!phone&&!address&&!city&&!dept){
-    alert('Entrez au moins un critère');
-    return;
+  for(const[k,u]of Object.entries(fbUsers)){
+    if(k==='admin')continue;
+    merged[k]={
+      ...(local[k]||{}),
+      ...u,
+      password:local[k]?.password||'' 
+    };
   }
   
+  try{
+    const toSave={};
+    for(const[k,u]of Object.entries(merged)){
+      toSave[k]={...u};
+      if(k==='admin')delete toSave[k].password;
+    }
+    localStorage.setItem('ds_users',JSON.stringify(toSave));
+  }catch(e){}
+  const all=Object.values(merged);
+  document.getElementById('admin-total-users').textContent=all.length;
+  document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
+  document.getElementById('admin-free-users').textContent=all.filter(u=>u.plan==='free').length;
+  document.getElementById('admin-searches-total').textContent=all.reduce((s,u)=>s+(u.searches||0),0);
+  const onlineLabel=document.getElementById('admin-online-label');
+  if(onlineLabel)onlineLabel.textContent='Temps réel 🟢 '+all.length+' membres';
+  renderAdminTable(all);
+  renderAdminNotifs();
+}
+
+function switchTab(el,id){
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  const t=document.getElementById('tab-'+id);if(t)t.classList.add('active');
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('results-placeholder').style.display='flex';
+  document.getElementById('results-list').innerHTML='';
+}
+
+
+async function doSearch(mode){
   const sess=getSession();if(!sess)return;
-  const users=getUsers();
-  const account=users[sess.username];
-  if(!account)return;
-  
-  // Increment searches
+  const users=getUsers();const account=users[sess.username];if(!account)return;
+  const limit=getSearchLimit(account.plan);
+  const today=new Date().toDateString();
+  if(account.lastSearchDay!==today){account.searches=0;account.lastSearchDay=today;}
+  if(account.searches>=limit&&limit!==Infinity){
+    const w=document.getElementById('search-limit-warn');
+    w.textContent='⚠ LIMITE ATTEINTE ('+limit+'/jour)';w.classList.add('show');return;
+  }
+  let query='',filters={};
+  if(mode==='breach'){
+    const get=id=>(document.getElementById(id)?.value||'').trim();
+    const email=get('s-email'),tel=get('s-telephone'),nom=get('s-nom'),prenom=get('s-prenom');
+    const username=get('s-username'),ip=get('s-ip'),domaine=get('s-domaine');
+    const ville=get('s-ville'),dept=get('s-departement'),pays=get('s-pays');
+    query=email||tel||username||ip||domaine;
+    if(!query&&(prenom||nom))query=[prenom,nom].filter(Boolean).join(' ');
+    if(!query)query=ville||dept||pays;
+    filters={nom,prenom,ville,dept,pays,tel,ip};
+  }else if(mode==='stealer'){
+    query=(document.getElementById('s-stealer-q')?.value||'').trim();
+  }else{
+    query=(document.getElementById('s-osint-q')?.value||'').trim();
+  }
+  if(!query){alert('Veuillez renseigner au moins un critère.');return;}
+  document.getElementById('search-limit-warn').classList.remove('show');
+  document.getElementById('results-section').style.display='block';
+  document.getElementById('results-placeholder').style.display='none';
+  const lst=document.getElementById('results-list');
+  lst.innerHTML='<div class="loading-state"><div class="loader-ring"></div><div class="loader-text">Analyse en cours...</div></div>';
   account.searches=(account.searches||0)+1;
-  users[sess.username]=account;
-  saveUsers(users);
-  document.getElementById('info-searches').textContent=account.searches;
-  
-  // Build API call avec OathNet
-  const params=new URLSearchParams({
-    firstname,lastname,phone,address,city,dept
-  });
-  
-  const resultsSection=document.getElementById('results-section');
-  const resultsList=document.getElementById('results-list');
-  resultsSection.style.display='block';
-  resultsList.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Recherche en cours...</div>';
-  
+  users[sess.username]=account;saveUsers(users);setSession(account);updateSearchDisplay(account);
   try{
-    // ✅ OATHNET API
-    const apiUrl=getOathNetAPI()+'?'+params;
-    const response=await fetch(apiUrl,{
-      headers:{'Accept':'application/json'},
-      signal:AbortSignal.timeout(10000)
+    const r=await fetch(_dw()+'?q='+encodeURIComponent(query)+'&action='+mode,{
+      headers:{'Accept':'application/json'},signal:AbortSignal.timeout(60000)
     });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(!data.success)throw new Error(data.error||'Erreur API');
     
-    if(!response.ok)throw new Error('API Error: '+response.status);
-    const data=await response.json();
-    
-    if(!data.results||!data.results.length){
-      resultsList.innerHTML='<div style="text-align:center;padding:20px;"><div style="font-size:24px;margin-bottom:8px;">📄</div><div style="color:var(--muted);">Aucun document trouvé</div></div>';
-      return;
+    if(mode==='breach'){
+      let results=data.data?.breach?.data?.results||[];
+      if(results.length>0){
+        results=results.filter(rec=>{
+          const s=JSON.stringify(rec).toLowerCase();
+          if(filters.nom&&!s.includes(filters.nom.toLowerCase()))return false;
+          if(filters.prenom&&!s.includes(filters.prenom.toLowerCase()))return false;
+          if(filters.ville&&!s.includes(filters.ville.toLowerCase()))return false;
+          if(filters.dept&&!s.includes(filters.dept.toLowerCase()))return false;
+          if(filters.pays&&!s.includes(filters.pays.toLowerCase()))return false;
+          if(filters.tel&&!s.includes(filters.tel.toLowerCase()))return false;
+          if(filters.ip&&!s.includes(filters.ip.toLowerCase()))return false;
+          return true;
+        });
+        data.data.breach.data.results=results;
+      }
     }
-    
-    document.getElementById('results-count').textContent=data.results.length;
-    resultsList.innerHTML=data.results.map(r=>`
-      <div class="result-item">
-        <div class="result-header">
-          <div class="result-title">${r.firstname||''} ${r.lastname||''}</div>
-          <span class="result-badge">DOCUMENT</span>
-        </div>
-        <div class="result-fields">
-          ${r.firstname?`<div class="result-field"><div class="result-field-label">PRÉNOM</div><div class="result-field-value">${r.firstname}</div></div>`:''}
-          ${r.lastname?`<div class="result-field"><div class="result-field-label">NOM</div><div class="result-field-value">${r.lastname}</div></div>`:''}
-          ${r.phone?`<div class="result-field"><div class="result-field-label">TÉLÉPHONE</div><div class="result-field-value">${r.phone}</div></div>`:''}
-          ${r.email?`<div class="result-field"><div class="result-field-label">EMAIL</div><div class="result-field-value">${r.email}</div></div>`:''}
-          ${r.address?`<div class="result-field"><div class="result-field-label">ADRESSE</div><div class="result-field-value">${r.address}</div></div>`:''}
-          ${r.city?`<div class="result-field"><div class="result-field-label">VILLE</div><div class="result-field-value">${r.city}</div></div>`:''}
-          ${r.dept?`<div class="result-field"><div class="result-field-label">DEPT</div><div class="result-field-value">${r.dept}</div></div>`:''}
-        </div>
-      </div>
-    `).join('');
-    
-    addNotification('search','Document trouvé','Votre recherche a produit '+data.results.length+' résultat(s)');
+    renderResults(data.data,mode,query,lst);
   }catch(e){
-    resultsList.innerHTML='<div style="text-align:center;padding:20px;color:var(--error);">❌ Erreur API: '+e.message+'</div>';
-    console.error('Search error:',e);
+    lst.innerHTML='<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title" style="color:var(--red)">'+e.message+'</div><button onclick="doSearch(\''+mode+'\')" style="margin-top:14px;padding:9px 20px;background:var(--blue-glow);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600">🔄 Réessayer</button></div>';
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// LOOKUP (Discord/IP/Email/Username)
-// ═══════════════════════════════════════════════════════════════════════════
-async function doLookup(){
-  const query=(document.getElementById('lookup-query').value||'').trim();
-  if(!query){alert('Entrez un identifiant');return;}
-  
-  const resultsDiv=document.getElementById('lookup-results');
-  const content=document.getElementById('lookup-content');
-  resultsDiv.style.display='block';
-  content.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Recherche en cours...</div>';
-  
-  try{
-    // ✅ ENDPOINT LOOKUP OPEN-SOURCE
-    // Utilise des APIs publiques gratuites
-    let data=null;
-    
-    // Détect type (Discord ID = numérique long, email = @, IP = points, etc)
-    if(/^\d{15,21}$/.test(query)){
-      // Discord ID
-      const res=await fetch('https://discord.com/api/v10/users/'+query,{
-        headers:{'Authorization':'Bearer YOUR_DISCORD_TOKEN'},
-        signal:AbortSignal.timeout(5000)
-      }).catch(()=>null);
-      if(res&&res.ok)data=await res.json();
-    }else if(/^[\d.]+$/.test(query)){
-      // IP Address
-      const res=await fetch('https://ipapi.co/'+query+'/json/',{
-        signal:AbortSignal.timeout(5000)
-      });
-      if(res.ok)data=await res.json();
-    }else if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query)){
-      // Email - Verify with Hunter.io free API
-      const res=await fetch('https://api.hunter.io/v2/email-verifier?domain='+query.split('@')[1]+'&email='+query,{
-        signal:AbortSignal.timeout(5000)
-      });
-      if(res.ok)data=await res.json();
-    }else{
-      // Username - Generic search
-      data={username:query,type:'Username'};
-    }
-    
-    if(!data){
-      content.innerHTML='<div style="text-align:center;padding:20px;"><div style="font-size:24px;margin-bottom:8px;">🔎</div><div style="color:var(--muted);">Aucun résultat trouvé</div></div>';
-      return;
-    }
-    
-    // Afficher résultats
-    content.innerHTML=`
-      <div class="result-item">
-        <div class="result-header">
-          <div class="result-title">${data.username||data.user?.username||query}</div>
-          <span class="result-badge">LOOKUP</span>
-        </div>
-        <div class="result-fields">
-          ${data.country?`<div class="result-field"><div class="result-field-label">PAYS</div><div class="result-field-value">${data.country}</div></div>`:''}
-          ${data.city?`<div class="result-field"><div class="result-field-label">VILLE</div><div class="result-field-value">${data.city}</div></div>`:''}
-          ${data.ip?`<div class="result-field"><div class="result-field-label">IP</div><div class="result-field-value">${data.ip}</div></div>`:''}
-          ${data.isp?`<div class="result-field"><div class="result-field-label">ISP</div><div class="result-field-value">${data.isp}</div></div>`:''}
-          ${data.email?`<div class="result-field"><div class="result-field-label">EMAIL</div><div class="result-field-value">${data.email}</div></div>`:''}
-          ${data.result?`<div class="result-field"><div class="result-field-label">VÉRIFICATION</div><div class="result-field-value">${data.result}</div></div>`:''}
-        </div>
-      </div>
-    `;
-    
-    addNotification('lookup','Lookup réussi','Information trouvée pour: '+query);
-  }catch(e){
-    content.innerHTML='<div style="text-align:center;padding:20px;color:var(--error);">❌ Erreur: '+e.message+'</div>';
+function renderResults(data,mode,query,lst){
+  const f=(l,v,h=false)=>v?'<div class="result-field"><div class="result-field-label">'+l+'</div><div class="result-field-value'+(h?' hi':'')+'">'+String(v)+'</div></div>':'';
+  if(mode==='breach'){
+    const results=data.breach?.data?.results||[];
+    document.getElementById('results-count').textContent=results.length+' résultat'+(results.length>1?'s':'');
+    if(!results.length){lst.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat</div><div class="no-results-sub">"'+query+'"</div></div>';return;}
+    const labels={email:'EMAIL',password:'PASSWORD',username:'USERNAME',first_name:'PRÉNOM',last_name:'NOM',name:'NOM',phone_number:'TÉLÉPHONE',telephone:'TÉL',ip_address:'IP',address:'ADRESSE',city:'VILLE',country:'PAYS',zip:'CODE POSTAL',state:'ÉTAT',source:'SOURCE',database:'BASE',gender:'GENRE',birthdate:'NAISSANCE'};
+    lst.innerHTML=results.map((rec,i)=>{
+      const nm=[rec.first_name||'',rec.last_name||'',rec.name||'',rec.username||''].filter(Boolean).join(' ')||'#'+(i+1);
+      const src=rec.source||rec.database||'';
+      const fields=Object.entries(rec).map(([k,v])=>f(labels[k]||k.toUpperCase(),v,k==='email'||k==='username')).join('');
+      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">'+nm[0].toUpperCase()+'</div><div><div class="result-name">'+nm+'</div><div class="result-badges"><span class="rbadge rbadge-breach">Breach</span>'+(src?'<span class="rbadge rbadge-source">'+src+'</span>':'')+'</div></div></div><span class="result-status status-breach">LEAK</span></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+    }).join('');
+  }else if(mode==='stealer'){
+    const results=data.stealer?.data?.results||data.stealer?.results||[];
+    document.getElementById('results-count').textContent=results.length+' résultat'+(results.length>1?'s':'');
+    if(!results.length){lst.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun log</div></div>';return;}
+    lst.innerHTML=results.map((rec,i)=>'<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-amber">🦠</div><div><div class="result-name">Log #'+(i+1)+'</div><div class="result-badges"><span class="rbadge rbadge-stealer">Stealer</span></div></div></div><span class="result-status status-log">LOG</span></div><div class="result-card-body"><div class="result-grid">'+Object.entries(rec).map(([k,v])=>'<div class="result-field"><div class="result-field-label">'+k.toUpperCase()+'</div><div class="result-field-value">'+String(v||'')+'</div></div>').join('')+'</div></div></div>').join('');
+  }else{
+    const osint=data.osint;
+    if(!osint||!osint.data){document.getElementById('results-count').textContent='0 résultat';lst.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat OSINT</div></div>';return;}
+    document.getElementById('results-count').textContent='1 résultat';
+    const rec=osint.data?.data||osint.data||{};
+    lst.innerHTML='<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">🕵️</div><div><div class="result-name">OSINT — '+osint.type+'</div><div class="result-badges"><span class="rbadge rbadge-osint">OSINT</span></div></div></div><span class="result-status status-found">TROUVÉ</span></div><div class="result-card-body"><div class="result-grid">'+Object.entries(rec).map(([k,v])=>'<div class="result-field"><div class="result-field-label">'+k.toUpperCase()+'</div><div class="result-field-value">'+( typeof v==='object'?JSON.stringify(v):String(v||''))+'</div></div>').join('')+'</div></div></div>';
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ACCOUNT
-// ═══════════════════════════════════════════════════════════════════════════
-function updatePassword(){
-  const sess=getSession();if(!sess)return;
-  const old=document.getElementById('pass-old').value;
-  const nw=document.getElementById('pass-new').value;
-  const conf=document.getElementById('pass-conf').value;
-  const msg=document.getElementById('pass-msg');
-  
+
+function refreshAdminTable(){
   const users=getUsers();
-  const account=users[sess.username];
-  
-  if(!account||account.password!==old){
-    msg.textContent='❌ Mot de passe actuel incorrect';
-    msg.style.color='var(--error)';
-    msg.style.display='block';
-    return;
-  }
-  if(nw.length<6){
-    msg.textContent='❌ Minimum 6 caractères';
-    msg.style.color='var(--error)';
-    msg.style.display='block';
-    return;
-  }
-  if(nw!==conf){
-    msg.textContent='❌ Les mots de passe ne correspondent pas';
-    msg.style.color='var(--error)';
-    msg.style.display='block';
-    return;
-  }
-  
-  account.password=nw;
-  users[sess.username]=account;
-  saveUsers(users);
-  setSession(account);
-  
-  msg.textContent='✓ Mot de passe modifié';
-  msg.style.color='var(--success)';
-  msg.style.display='block';
-  
-  document.getElementById('pass-old').value='';
-  document.getElementById('pass-new').value='';
-  document.getElementById('pass-conf').value='';
-  
-  addNotification('update','Sécurité','Votre mot de passe a été modifié');
+  const all=Object.values(users);
+  document.getElementById('admin-total-users').textContent=all.length;
+  document.getElementById('admin-pro-users').textContent=all.filter(u=>['pro','elite','admin'].includes(u.plan)).length;
+  document.getElementById('admin-free-users').textContent=all.filter(u=>u.plan==='free').length;
+  document.getElementById('admin-searches-total').textContent=all.reduce((s,u)=>s+(u.searches||0),0);
+  const sess=getSession();
+  const onlineLabel=document.getElementById('admin-online-label');
+  if(onlineLabel)onlineLabel.textContent=(sess?'1':'0')+' en ligne';
+  renderAdminTable(all);
+  renderAdminNotifs();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS (pour tous les utilisateurs)
-// ═══════════════════════════════════════════════════════════════════════════
-function addNotification(type,title,body){
-  try{
-    let notifs=JSON.parse(localStorage.getItem('ds_notifs')||'[]');
-    notifs.push({
-      id:Date.now().toString(),
-      type,
-      title,
-      body,
-      timestamp:new Date().toLocaleTimeString('fr-FR')
-    });
-    localStorage.setItem('ds_notifs',JSON.stringify(notifs));
-    renderNotifs();
-  }catch(e){}
+function renderAdminTable(users){
+  const tbody=document.getElementById('admin-table-body');if(!tbody)return;
+  const sess=getSession();
+  tbody.innerHTML=users.map(u=>{
+    const isOnline=sess&&sess.username===u.username;
+    const dot='<span class="user-online-dot'+(isOnline?' on':'')+'"></span>';
+    return '<tr><td>'+dot+'</td><td style="font-weight:600;color:var(--text)">'+u.username+'</td><td>'+(u.email||'—')+'</td><td><span class="sb-plan-badge plan-'+u.plan+'">'+u.plan+'</span></td><td style="font-family:var(--mono)">'+(u.searches||0)+'</td><td style="font-family:var(--mono);font-size:11px">'+(u.since||'—')+'</td><td><button class="admin-action-btn btn-edit" onclick="editUser(\''+u.username+'\')">Modifier</button><button class="admin-action-btn btn-delete" onclick="deleteUser(\''+u.username+'\')">Suppr.</button></td></tr>';
+  }).join('');
 }
 
-function renderNotifs(){
-  try{
-    const notifs=JSON.parse(localStorage.getItem('ds_notifs')||'[]');
-    const list=document.getElementById('notif-list');
-    if(!notifs.length){
-      list.innerHTML='<div style="padding:12px;text-align:center;color:var(--muted);font-size:12px;">Aucune notification</div>';
-      return;
-    }
-    list.innerHTML=[...notifs].reverse().slice(0,10).map(n=>`
-      <div class="notif-item">
-        <div class="notif-type">${n.type}</div>
-        <div class="notif-title">${n.title}</div>
-        <div class="notif-body">${n.body}</div>
-      </div>
-    `).join('');
-  }catch(e){}
+function filterAdminTable(){
+  const q=(document.getElementById('admin-search')?.value||'').toLowerCase();
+  const all=Object.values(getUsers()).filter(u=>JSON.stringify(u).toLowerCase().includes(q));
+  renderAdminTable(all);
 }
 
-function toggleNotif(){
-  document.getElementById('notif-panel').classList.toggle('show');
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ADMIN
-// ═══════════════════════════════════════════════════════════════════════════
-function loadAdminUsers(){
-  const users=Object.values(getUsers()).filter(u=>u.username!=='admin');
-  const tbody=document.getElementById('admin-users');
-  tbody.innerHTML=users.map(u=>`
-    <tr>
-      <td><strong>${u.username}</strong></td>
-      <td>${u.email}</td>
-      <td><span class="badge badge-${u.plan}">${u.plan}</span></td>
-      <td>${u.searches||0}</td>
-      <td><button class="btn-secondary" style="padding:4px 12px;font-size:11px;" onclick="openEditUser('${u.username}')">Modifier</button></td>
-    </tr>
-  `).join('');
-}
-
-function openEditUser(username){
-  const users=getUsers();
-  const u=users[username];
-  document.getElementById('edit-username').value=username;
-  document.getElementById('edit-plan').value=u.plan;
+function editUser(username){
+  const u=getUsers()[username];if(!u)return;
+  document.getElementById('edit-username-key').value=username;
+  document.getElementById('edit-plan').value=u.plan==='admin'?'pro':u.plan;
   document.getElementById('edit-status').value=u.status||'actif';
-  document.getElementById('edit-user-modal').classList.add('show');
+  document.getElementById('edit-modal').classList.add('show');
 }
 
 function saveEditUser(){
-  const username=document.getElementById('edit-username').value;
+  const username=document.getElementById('edit-username-key').value;
   const plan=document.getElementById('edit-plan').value;
   const status=document.getElementById('edit-status').value;
   
   const users=getUsers();
   if(!users[username])return;
-  
   users[username].plan=plan;
   users[username].status=status;
   saveUsers(users);
   
-  // Sync Firebase
   if(window._fbReady&&window._db){
-    window._db.collection('users').doc(username).update({plan,status}).catch(()=>{});
+    window._db.collection('users').doc(username).set(
+      {plan, status},
+      {merge:true}
+    ).then(()=>console.log('[Admin] Plan mis à jour ✅'))
+     .catch(e=>console.error('[Admin] Erreur:',e));
   }
+  document.getElementById('edit-modal').classList.remove('show');
+  refreshAdminTable();
+}
+
+function deleteUser(username){
+  if(username==='admin'){alert('Impossible de supprimer admin.');return;}
+  if(!confirm('Supprimer '+username+' ?'))return;
+  const users=getUsers();delete users[username];saveUsers(users);
   
-  loadAdminUsers();
-  closeEditModal();
-  addNotification('admin','Utilisateur modifié',''+username+' → Plan: '+plan);
+  if(window._fbReady&&window._db)
+    window._db.collection('users').doc(username).delete().catch(()=>{});
+  refreshAdminTable();
 }
 
-function closeEditModal(){
-  document.getElementById('edit-user-modal').classList.remove('show');
+
+let isAnnual=false;
+function toggleBill(){
+  isAnnual=!isAnnual;
+  document.getElementById('bill-tog').classList.toggle('on',isAnnual);
+  document.getElementById('lbl-m').classList.toggle('active',!isAnnual);
+  document.getElementById('lbl-a').classList.toggle('active',isAnnual);
+  [['starter',10,8],['pro',25,20],['elite',80,64]].forEach(([p,m,a])=>{
+    const pe=document.getElementById(p+'-price');if(pe)pe.textContent=isAnnual?a:m;
+    const pd=document.getElementById(p+'-period');if(pd)pd.textContent='/ mois';
+    const pa=document.getElementById(p+'-annual');if(pa)pa.textContent=isAnnual?'-20% — '+(m-a)*12+'€ économisés/an':' ';
+  });
+}
+function openModal(plan){document.getElementById('modal-plan-name').textContent=plan;document.getElementById('plan-modal').classList.add('show');}
+function toggleFaq(item){const o=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!o)item.classList.add('open');}
+
+
+function startClock(){
+  const tick=()=>{
+    const t=new Date().toLocaleTimeString('fr-FR');
+    const c=document.getElementById('clock');if(c)c.textContent=t;
+    const c2=document.getElementById('clock2');if(c2)c2.textContent=t;
+  };
+  tick();setInterval(tick,1000);
 }
 
-function buyPlan(plan){
-  document.getElementById('plan-modal-name').textContent=plan;
-  document.getElementById('plan-modal').classList.add('show');
+function animCount(el,target){
+  if(!el)return;
+  let cur=0;const step=Math.ceil(target/60);
+  const iv=setInterval(()=>{
+    cur=Math.min(cur+step,target);
+    el.textContent=cur>=1000000000?(cur/1000000000).toFixed(1)+'Md':cur>=1000?(cur/1000).toFixed(0)+'k':cur;
+    if(cur>=target)clearInterval(iv);
+  },16);
 }
 
-function closePlanModal(){
-  document.getElementById('plan-modal').classList.remove('show');
+
+function getNotifications(){try{return JSON.parse(localStorage.getItem('ds_notifs')||'[]');}catch(e){return[];}}
+function saveNotifications(n){try{localStorage.setItem('ds_notifs',JSON.stringify(n));}catch(e){}}
+
+function renderNotifPanel(){
+  const notifs=getNotifications();
+  const unread=notifs.filter(n=>!n.read);
+  const badge=document.getElementById('notif-badge');
+  if(unread.length){badge.textContent=unread.length>9?'9+':unread.length;badge.classList.add('show');}
+  else badge.classList.remove('show');
+  const list=document.getElementById('notif-list');if(!list)return;
+  if(!notifs.length){list.innerHTML='<div class="notif-empty">Aucune notification</div>';return;}
+  const tc={update:'type-update',info:'type-info',alert:'type-alert',urgent:'type-urgent'};
+  const tl={update:'✅ Mise à jour',info:'ℹ️ Info',alert:'⚠️ Alerte',urgent:'🚨 Urgent'};
+  list.innerHTML=[...notifs].reverse().map(n=>'<div class="notif-item'+(n.read?'':' unread')+'" onclick="markRead(\''+n.id+'\')"><div class="ni-type '+(tc[n.type]||'type-info')+'">'+(tl[n.type]||n.type)+'</div><div class="ni-title">'+n.title+'</div><div class="ni-body">'+n.body+'</div><div class="ni-date">'+n.date+'</div></div>').join('');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FAQ
-// ═══════════════════════════════════════════════════════════════════════════
-function toggleFaq(el){
-  const isOpen=el.classList.contains('open');
-  document.querySelectorAll('.faq-item').forEach(item=>item.classList.remove('open'));
-  if(!isOpen)el.classList.add('open');
+function toggleNotifPanel(){document.getElementById('notif-panel').classList.toggle('show');}
+function markRead(id){const n=getNotifications();const x=n.find(i=>i.id===id);if(x){x.read=true;saveNotifications(n);renderNotifPanel();}}
+function markAllRead(){const n=getNotifications();n.forEach(x=>x.read=true);saveNotifications(n);renderNotifPanel();}
+
+function addNotification(){
+  const type=document.getElementById('notif-type').value;
+  const title=(document.getElementById('notif-new-title').value||'').trim();
+  const body=(document.getElementById('notif-new-body').value||'').trim();
+  const date=document.getElementById('notif-new-date').value;
+  if(!title||!body){alert('Titre et message requis.');return;}
+  const notifs=getNotifications();
+  notifs.push({id:Date.now().toString(),type,title,body,date:date||new Date().toLocaleDateString('fr-FR'),read:false});
+  saveNotifications(notifs);
+  document.getElementById('notif-new-title').value='';
+  document.getElementById('notif-new-body').value='';
+  renderNotifPanel();renderAdminNotifs();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
-  // Essayer d'auto-login avec la session existante
-  const sess=getSession();
-  if(sess){
-    const users=getUsers();
-    const account=users[sess.username];
-    if(account&&account.status!=='banni'){
-      // Connexion automatique après la vérification
-      setTimeout(()=>{
-        document.getElementById('verification-page').classList.remove('show');
-        enterApp(account);
-      },1500);
+function renderAdminNotifs(){
+  const notifs=getNotifications();
+  const list=document.getElementById('notif-list-admin');if(!list)return;
+  if(!notifs.length){list.innerHTML='<div style="font-size:11px;color:var(--text3);padding:8px">Aucune notification</div>';return;}
+  list.innerHTML=[...notifs].reverse().map(n=>'<div class="notif-admin-item"><div class="notif-admin-item-text"><strong style="color:var(--text)">['+n.type.toUpperCase()+']</strong> '+n.title+' — '+n.date+'</div><button class="btn-del-notif" onclick="deleteNotif(\''+n.id+'\')">Supprimer</button></div>').join('');
+}
+
+function deleteNotif(id){saveNotifications(getNotifications().filter(x=>x.id!==id));renderNotifPanel();renderAdminNotifs();}
+
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notif-panel');
+  if(p&&p.classList.contains('show')&&!p.contains(e.target)&&!e.target.closest('.tb-btn'))p.classList.remove('show');
+});
+
+
+let snakeGame=null;
+let snakeDir={x:1,y:0};
+
+function initSnake(){
+  const canvas=document.getElementById('snake-canvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,cell=20;
+  snakeDir={x:1,y:0};
+  let snake=[{x:10,y:5}],food=spawn(),score=0,running=false,loop=null;
+  document.getElementById('snake-best').textContent=localStorage.getItem('snake_best')||'0';
+  function spawn(){return{x:Math.floor(Math.random()*(W/cell)),y:Math.floor(Math.random()*(H/cell))};}
+  function draw(){
+    ctx.fillStyle='#080a0e';ctx.fillRect(0,0,W,H);
+    
+    ctx.strokeStyle='rgba(255,255,255,0.02)';ctx.lineWidth=0.5;
+    for(let x=0;x<W;x+=cell){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=cell){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    snake.forEach((s,i)=>{
+      ctx.fillStyle=i===0?'#4f8ef7':'#2a5bb8';
+      ctx.fillRect(s.x*cell+1,s.y*cell+1,cell-2,cell-2);
+    });
+    ctx.fillStyle='#10d474';ctx.fillRect(food.x*cell+2,food.y*cell+2,cell-4,cell-4);
+  }
+  function step(){
+    const head={x:snake[0].x+snakeDir.x,y:snake[0].y+snakeDir.y};
+    if(head.x<0||head.x>=W/cell||head.y<0||head.y>=H/cell||snake.some(s=>s.x===head.x&&s.y===head.y)){
+      clearInterval(loop);running=false;
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ff4757';ctx.font='bold 15px JetBrains Mono';ctx.textAlign='center';
+      ctx.fillText('GAME OVER — '+score,W/2,H/2);
+      const b=parseInt(localStorage.getItem('snake_best')||'0');
+      if(score>b){localStorage.setItem('snake_best',score);document.getElementById('snake-best').textContent=score;}
       return;
-    }else{
-      // Session expirée ou compte supprimé
-      clearSession();
+    }
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){score++;document.getElementById('snake-score').textContent=score;food=spawn();}
+    else snake.pop();
+    draw();
+  }
+  snakeGame={
+    play(){if(running)return;if(snake.length===1&&snakeDir.x===1){snake=[{x:10,y:5}];snakeDir={x:1,y:0};score=0;document.getElementById('snake-score').textContent=0;}running=true;loop=setInterval(step,150);},
+    pause(){clearInterval(loop);running=false;}
+  };
+  draw();
+}
+function snakePlay(){if(snakeGame)snakeGame.play();}
+function snakePause(){if(snakeGame)snakeGame.pause();}
+
+document.addEventListener('keydown',e=>{
+  const key=e.key.toLowerCase();
+  // Vérifier si on est dans un input ou textarea
+  const isInTextInput = document.activeElement.tagName === 'INPUT' || 
+                        document.activeElement.tagName === 'TEXTAREA';
+  
+  if(['z','q','s','d'].includes(key) && !isInTextInput){
+    e.preventDefault();
+    e.stopPropagation();
+    const m={z:{x:0,y:-1},s:{x:0,y:1},q:{x:-1,y:0},d:{x:1,y:0}};
+    const nd=m[key];
+    if(!(nd.x===-snakeDir.x&&nd.y===-snakeDir.y)){
+      snakeDir=nd;
     }
   }
-  
-  // Pas de session valide → afficher la page de login
-  setTimeout(()=>{
-    document.getElementById('verification-page').classList.remove('show');
-    document.getElementById('login-page').classList.add('show');
-  },1500);
-});
+},true);
+
+(function(){
+  function closeTab(){
+    window.location='about:blank';
+    window.close();
+  }
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  document.addEventListener('keydown',e=>{
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key.toUpperCase()))||e.ctrlKey&&e.key.toUpperCase()==='U'){
+      e.preventDefault();
+      closeTab();
+      return false;
+    }
+  });
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160){
+      closeTab();
+    }
+  },2000);
+})();
+
+
+document.getElementById('plan-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
 
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 document.getElementById('reg-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
 
-document.addEventListener('click',e=>{
-  const p=document.getElementById('notif-panel');
-  if(p&&p.classList.contains('show')&&!p.contains(e.target)&&e.target.id!=='notif-icon')p.classList.remove('show');
-});
 
-// Firebase load
-window.addEventListener('load',()=>{
-  const loadScript=(src,cb)=>{
+(function(){
+  const sess=getSession();
+  if(sess){
+    const users=getUsers();
+    const account=users[sess.username];
+    if(account&&account.status!=='banni')enterApp(account);
+  }
+})();
+
+
+window.addEventListener('load', function(){
+  function loadScript(src, cb){
     const s=document.createElement('script');
     s.src=src;
     s.onload=cb;
+    s.onerror=function(){ console.warn('[Firebase] Impossible de charger '+src); };
     document.head.appendChild(s);
-  };
-  loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',()=>{
-    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js',()=>{
+  }
+  loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function(){
+    loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', function(){
       try{
         if(!firebase.apps.length){
           firebase.initializeApp({
@@ -1762,10 +1551,11 @@ window.addEventListener('load',()=>{
         }
         window._db=firebase.firestore();
         window._fbReady=true;
-      }catch(e){}
+        console.log('[DarkSearcher] Firebase prêt ✅');
+      }catch(e){ console.warn('[Firebase] Erreur init:',e); }
     });
   });
 });
+
+
 </script>
-</body>
-</html>
