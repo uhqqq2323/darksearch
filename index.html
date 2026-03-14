@@ -50,6 +50,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes notifIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes glow{0%{box-shadow:0 0 8px rgba(0,217,255,0.2)}50%{box-shadow:0 0 16px rgba(0,217,255,0.4)}100%{box-shadow:0 0 8px rgba(0,217,255,0.2)}}
 @keyframes drift{0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+@keyframes planUpdated{0%{background:rgba(38,224,124,0.3);box-shadow:0 0 12px rgba(38,224,124,0.6)}50%{background:rgba(38,224,124,0.1);box-shadow:0 0 6px rgba(38,224,124,0.3)}100%{background:transparent;box-shadow:none}}
+.plan-updated{animation:planUpdated 1s ease-out !important;}
 
 /* ══ BACKGROUND & GRAIN ══ */
 body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 20% 50%,rgba(0,217,255,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
@@ -639,10 +641,10 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backgr
           <div class="filter-section">
             <div class="filter-label">Identité</div>
             <div class="filter-grid-2">
-              <div class="form-group"><label class="form-label star">Email</label><div class="fi-wrap"><input class="form-input" id="s-email" placeholder="jean@gmail.com"><span class="fi-icon">✉️</span></div></div>
               <div class="form-group"><label class="form-label">Téléphone</label><div class="fi-wrap"><input class="form-input" id="s-telephone" placeholder="0612345678"><span class="fi-icon">📞</span></div></div>
               <div class="form-group"><label class="form-label">Nom</label><div class="fi-wrap"><input class="form-input" id="s-nom" placeholder="Dupont"><span class="fi-icon">👤</span></div></div>
               <div class="form-group"><label class="form-label">Prénom</label><div class="fi-wrap"><input class="form-input" id="s-prenom" placeholder="Jean"><span class="fi-icon">👤</span></div></div>
+              <div class="form-group"><label class="form-label">Adresse</label><div class="fi-wrap"><input class="form-input" id="s-adresse" placeholder="123 rue de..."><span class="fi-icon">🏠</span></div></div>
             </div>
           </div>
           <div class="filter-sep"></div>
@@ -652,15 +654,6 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backgr
               <div class="form-group"><label class="form-label">Ville</label><div class="fi-wrap"><input class="form-input" id="s-ville" placeholder="Paris"><span class="fi-icon">🏙️</span></div></div>
               <div class="form-group"><label class="form-label">Code postal / Dept</label><div class="fi-wrap"><input class="form-input" id="s-departement" placeholder="75, 81100..."><span class="fi-icon">📍</span></div></div>
               <div class="form-group"><label class="form-label">Pays</label><div class="fi-wrap"><input class="form-input" id="s-pays" placeholder="France"><span class="fi-icon">🌍</span></div></div>
-            </div>
-          </div>
-          <div class="filter-sep"></div>
-          <div class="filter-section">
-            <div class="filter-label">Numérique</div>
-            <div class="filter-grid-3">
-              <div class="form-group"><label class="form-label">Username</label><div class="fi-wrap"><input class="form-input" id="s-username" placeholder="jean_d"><span class="fi-icon">🏷️</span></div></div>
-              <div class="form-group"><label class="form-label">Adresse IP</label><div class="fi-wrap"><input class="form-input" id="s-ip" placeholder="1.2.3.4"><span class="fi-icon">🌐</span></div></div>
-              <div class="form-group"><label class="form-label">Domaine</label><div class="fi-wrap"><input class="form-input" id="s-domaine" placeholder="exemple.com"><span class="fi-icon">🔗</span></div></div>
             </div>
           </div>
           <div class="filter-sep"></div>
@@ -932,7 +925,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backgr
     <input type="hidden" id="edit-username-key">
     <div class="modal-field"><label class="modal-label">Licence</label><select id="edit-plan" class="modal-select"><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="elite">Elite</option></select></div>
     <div class="modal-field"><label class="modal-label">Statut</label><select id="edit-status" class="modal-select"><option value="actif">Actif</option><option value="banni">Banni</option></select></div>
-    <div class="modal-buttons"><button class="modal-btn-cancel" onclick="document.getElementById('edit-modal').classList.remove('show')">Annuler</button><button class="modal-btn-confirm" onclick="saveEditUser()">Sauvegarder</button></div>
+    <div class="modal-buttons"><button class="modal-btn-cancel" onclick="document.getElementById('edit-modal').classList.remove('show')">Annuler</button><button class="modal-btn-confirm" id="btn-save-edit" onclick="saveEditUser()">Sauvegarder</button></div>
   </div>
 </div>
 
@@ -1077,6 +1070,11 @@ function logout(){
   loginAttempts=0;loginBlocked=false;
   if(blockTimer)clearTimeout(blockTimer);
   if(adminInterval)clearInterval(adminInterval);
+  // ✅ NETTOYER LE LISTENER UTILISATEUR
+  if(window._userListener){
+    window._userListener();
+    window._userListener=null;
+  }
 }
 
 function hardReset(){
@@ -1165,6 +1163,7 @@ function enterApp(account){
   
   startWelcomeTyping(account.username);
   if(window._fbReady&&window._db&&account.username!=='admin'){
+    // ✅ RÉCUPÉRER LES DONNÉES À LA CONNEXION
     window._db.collection('users').doc(account.username).get().then(snap=>{
       if(snap.exists()){
         const d=snap.data();
@@ -1181,6 +1180,45 @@ function enterApp(account){
         if(pb){pb.textContent=updated.plan[0].toUpperCase()+updated.plan.slice(1);pb.className='sb-plan-badge plan-'+updated.plan;}
       }
     }).catch(()=>{});
+    
+    // ✅ LISTENER EN TEMPS RÉEL POUR METTRE À JOUR LE PLAN
+    window._userListener=window._db.collection('users').doc(account.username).onSnapshot(snap=>{
+      if(snap.exists()){
+        const fbData=snap.data();
+        const users=getUsers();
+        const currentUser=users[account.username];
+        
+        // ✅ SI LE PLAN A CHANGÉ, METTRE À JOUR
+        if(currentUser&&fbData.plan&&currentUser.plan!==fbData.plan){
+          console.log('[Real-time] Plan changé: '+currentUser.plan+' → '+fbData.plan);
+          currentUser.plan=fbData.plan;
+          currentUser.status=fbData.status||currentUser.status;
+          users[account.username]=currentUser;
+          
+          // Sauvegarder
+          const toSave={};
+          for(const[k,u]of Object.entries(users)){toSave[k]={...u};if(k==='admin')delete toSave[k].password;}
+          localStorage.setItem('ds_users',JSON.stringify(toSave));
+          
+          // Mettre à jour l'affichage
+          updateSearchDisplay(currentUser);
+          updateComptePage(currentUser);
+          const pb=document.getElementById('sb-plan-badge');
+          if(pb){
+            pb.textContent=currentUser.plan[0].toUpperCase()+currentUser.plan.slice(1);
+            pb.className='sb-plan-badge plan-'+currentUser.plan;
+            pb.classList.add('plan-updated');
+            setTimeout(()=>pb.classList.remove('plan-updated'),1000);
+          }
+          
+          // Notification
+          const notifs=getNotifications();
+          notifs.push({id:Date.now().toString(),type:'update',title:'🎉 Nouveau plan',body:'Votre plan a été changé en '+currentUser.plan,date:new Date().toLocaleTimeString('fr-FR'),read:false});
+          saveNotifications(notifs);
+          renderNotifPanel();
+        }
+      }
+    });
   }
   document.getElementById('topbar-avatar-letter').textContent=account.username[0].toUpperCase();
   document.getElementById('sb-avatar-letter').textContent=account.username[0].toUpperCase();
@@ -1260,6 +1298,12 @@ function _mergeAndRenderAdmin(fbUsers){
   
   for(const[k,u]of Object.entries(fbUsers)){
     if(k==='admin')continue;
+    // ✅ DÉTECTER SI LE PLAN A CHANGÉ
+    const oldPlan=local[k]?.plan;
+    const newPlan=u.plan;
+    if(oldPlan&&oldPlan!==newPlan){
+      u._planChanged=true; // Flag pour l'animation
+    }
     merged[k]={
       ...(local[k]||{}),
       ...u,
@@ -1283,6 +1327,23 @@ function _mergeAndRenderAdmin(fbUsers){
   const onlineLabel=document.getElementById('admin-online-label');
   if(onlineLabel)onlineLabel.textContent='Temps réel 🟢 '+all.length+' membres';
   renderAdminTable(all);
+  
+  // ✅ APPLIQUER L'ANIMATION SUR LES PLANS CHANGÉS
+  setTimeout(()=>{
+    all.forEach(u=>{
+      if(u._planChanged){
+        const row=document.querySelector('tr');
+        if(row){
+          const planBadge=row.querySelector('.sb-plan-badge');
+          if(planBadge){
+            planBadge.classList.add('plan-updated');
+            setTimeout(()=>planBadge.classList.remove('plan-updated'),1000);
+          }
+        }
+      }
+    });
+  },100);
+  
   renderAdminNotifs();
 }
 
@@ -1310,13 +1371,11 @@ async function doSearch(mode){
   let query='',filters={};
   if(mode==='breach'){
     const get=id=>(document.getElementById(id)?.value||'').trim();
-    const email=get('s-email'),tel=get('s-telephone'),nom=get('s-nom'),prenom=get('s-prenom');
-    const adresse=get('s-adresse'),username=get('s-username'),ip=get('s-ip'),domaine=get('s-domaine');
-    const ville=get('s-ville'),dept=get('s-departement'),pays=get('s-pays');
-    query=email||tel||username||ip||domaine;
-    if(!query&&(prenom||nom))query=[prenom,nom].filter(Boolean).join(' ');
+    const tel=get('s-telephone'),nom=get('s-nom'),prenom=get('s-prenom');
+    const adresse=get('s-adresse'),ville=get('s-ville'),dept=get('s-departement'),pays=get('s-pays');
+    query=tel||(prenom||nom?[prenom,nom].filter(Boolean).join(' '):'');
     if(!query)query=ville||dept||pays||adresse;
-    filters={nom,prenom,ville,dept,pays,tel,ip,adresse};
+    filters={nom,prenom,ville,dept,pays,tel,adresse};
   }else if(mode==='lookup'){
     query=(document.getElementById('s-lookup-q')?.value||'').trim();
   }else{
@@ -1382,41 +1441,19 @@ async function doSearch(mode){
 async function doLookup(query,lst){
   let results=[];
   
-  // Auto-detect type
-  const isDiscordID=/^\d{15,21}$/.test(query);
-  const isIP=/^(\d{1,3}\.){3}\d{1,3}$/.test(query);
-  const isEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
-  
   try{
-    if(isDiscordID){
-      // Discord User API (open)
-      const res=await fetch('https://discordapp.com/api/v9/users/'+query,{signal:AbortSignal.timeout(5000)}).catch(()=>({ok:false}));
-      if(res.ok){
-        const data=await res.json();
-        results.push({type:'Discord User',username:data.username,id:data.id,avatar:data.avatar,email:data.email||'N/A'});
-      }else{
-        results.push({type:'Discord',query:query,status:'Non trouvé'});
-      }
-    }
+    // ✅ OATHNET LOOKUP API
+    const res=await fetch(_dw()+'?q='+encodeURIComponent(query)+'&action=lookup',{
+      headers:{'Accept':'application/json'},
+      signal:AbortSignal.timeout(60000)
+    });
     
-    if(isIP){
-      // IP Geolocation (ipapi.co - free)
-      const res=await fetch('https://ipapi.co/'+query+'/json/',{signal:AbortSignal.timeout(5000)});
-      if(res.ok){
-        const data=await res.json();
-        results.push({type:'IP Geolocation',ip:data.ip,city:data.city,country:data.country_name,org:data.org,isp:data.org});
-      }
-    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(!data.success)throw new Error(data.error||'Erreur API OathNet');
     
-    if(isEmail){
-      // Email validation + simple lookup
-      results.push({type:'Email',address:query,status:'Valide',domain:query.split('@')[1]});
-    }
-    
-    if(!isDiscordID&&!isIP&&!isEmail){
-      // Username/generic search
-      results.push({type:'Username',query:query,status:'Recherche générique'});
-    }
+    // Parse OathNet response
+    results=data.data?.lookup?.data?.results||[];
     
     if(!results.length){
       lst.innerHTML='<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-title">Aucun résultat pour: '+query+'</div></div>';
@@ -1427,7 +1464,7 @@ async function doLookup(query,lst){
     const f=(l,v)=>v?'<div class="result-field"><div class="result-field-label">'+l+'</div><div class="result-field-value">'+String(v)+'</div></div>':'';
     lst.innerHTML=results.map((rec,i)=>{
       const fields=Object.entries(rec).map(([k,v])=>f(k.toUpperCase(),v)).filter(Boolean).join('');
-      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">🔎</div><div><div class="result-name">'+rec.type+'</div><div class="result-badges"><span class="rbadge rbadge-lookup">LOOKUP</span></div></div></div></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
+      return '<div class="result-card"><div class="result-card-top"><div class="result-person"><div class="result-avatar ra-blue">🔎</div><div><div class="result-name">'+(rec.username||rec.email||rec.ip||'Lookup #'+i)+'</div><div class="result-badges"><span class="rbadge rbadge-lookup">LOOKUP</span></div></div></div></div><div class="result-card-body"><div class="result-grid">'+fields+'</div></div></div>';
     }).join('');
     
     // Notification
@@ -1436,8 +1473,8 @@ async function doLookup(query,lst){
     saveNotifications(notifs);
     renderNotifPanel();
   }catch(e){
-    results.push({error:e.message});
     lst.innerHTML='<div class="no-results"><div class="no-results-icon">⚠️</div><div class="no-results-title">Erreur: '+e.message+'</div></div>';
+    console.error('Lookup error:',e);
   }
 }
 
@@ -1513,25 +1550,74 @@ function editUser(username){
 }
 
 function saveEditUser(){
+  const btn=document.getElementById('btn-save-edit');
   const username=document.getElementById('edit-username-key').value;
   const plan=document.getElementById('edit-plan').value;
   const status=document.getElementById('edit-status').value;
   
+  // ✅ FEEDBACK IMMÉDIAT
+  const originalText=btn.textContent;
+  btn.textContent='✅ Mise à jour...';
+  btn.disabled=true;
+  
   const users=getUsers();
-  if(!users[username])return;
+  if(!users[username]){
+    btn.textContent=originalText;
+    btn.disabled=false;
+    return;
+  }
+  
+  const oldPlan=users[username].plan;
   users[username].plan=plan;
   users[username].status=status;
   saveUsers(users);
   
+  // ✅ FIREBASE REAL-TIME UPDATE
   if(window._fbReady&&window._db){
-    window._db.collection('users').doc(username).set(
-      {plan, status},
-      {merge:true}
-    ).then(()=>console.log('[Admin] Plan mis à jour ✅'))
-     .catch(e=>console.error('[Admin] Erreur:',e));
+    window._db.collection('users').doc(username).update(
+      {plan, status, lastUpdated: new Date().getTime()}
+    ).then(()=>{
+      console.log('[Admin] Plan mis à jour en temps réel ✅');
+      
+      // ✅ NOTIFIER TOUS LES UTILISATEURS
+      if(oldPlan!==plan){
+        const notifs=getNotifications();
+        notifs.push({
+          id:Date.now().toString(),
+          type:'update',
+          title:'🎉 Mise à jour de licence',
+          body:'Utilisateur '+username+' prom en '+plan,
+          date:new Date().toLocaleTimeString('fr-FR'),
+          read:false
+        });
+        saveNotifications(notifs);
+        renderNotifPanel();
+      }
+      
+      btn.textContent='✅ Synchronisé!';
+      setTimeout(()=>{
+        document.getElementById('edit-modal').classList.remove('show');
+        btn.textContent=originalText;
+        btn.disabled=false;
+      },800);
+      refreshAdminTable();
+    })
+     .catch(e=>{
+       console.error('[Admin] Erreur Firebase:',e);
+       btn.textContent='❌ Erreur';
+       btn.disabled=false;
+       setTimeout(()=>btn.textContent=originalText,2000);
+       alert('Erreur lors de la mise à jour');
+     });
+  }else{
+    btn.textContent='✅ Local!';
+    setTimeout(()=>{
+      document.getElementById('edit-modal').classList.remove('show');
+      btn.textContent=originalText;
+      btn.disabled=false;
+    },800);
+    refreshAdminTable();
   }
-  document.getElementById('edit-modal').classList.remove('show');
-  refreshAdminTable();
 }
 
 function deleteUser(username){
