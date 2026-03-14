@@ -1160,31 +1160,52 @@ function startWelcomeTyping(username) {
   type();
 }
 
-// syncThenEnter : TOUJOURS fetcher Firebase avant d afficher l app
-// C est la seule fonction à appeler pour entrer dans l app
+// syncThenEnter : fetch Firebase PUIS affiche l app (jamais avant)
 function syncThenEnter(account) {
   if (window._fbReady && window._db && account.username !== 'admin') {
-    // Montrer un mini loader pendant la sync
+    // Cacher les pages auth, montrer un loader
     document.getElementById('login-page').classList.remove('show');
     document.getElementById('register-page').classList.remove('show');
-    document.getElementById('app').style.display = 'block';
-    // Afficher d abord avec les données locales
-    enterApp(account);
-    // Puis immédiatement re-fetcher Firebase pour corriger le plan
+
+    // Petit loader pendant la sync Firebase
+    const loaderDiv = document.createElement('div');
+    loaderDiv.id = 'fb-sync-loader';
+    loaderDiv.style.cssText = 'position:fixed;inset:0;background:#0d0d0d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9999;';
+    loaderDiv.innerHTML = '<div style="width:36px;height:36px;border-radius:50%;border:2px solid #2a2a2a;border-top-color:#00d9ff;animation:spin .7s linear infinite"></div><div style="font-size:13px;color:#737373;font-family:JetBrains Mono,monospace">Synchronisation...</div>';
+    document.body.appendChild(loaderDiv);
+
+    // Timeout 3s max - si Firebase trop lent, on entre quand même
+    const timeout = setTimeout(() => {
+      const l = document.getElementById('fb-sync-loader');
+      if (l) l.remove();
+      enterApp(account);
+    }, 3000);
+
     window._db.collection('users').doc(account.username).get().then(snap => {
-      if (!snap.exists()) return;
-      const fbData = snap.data();
-      const users = getUsers();
-      if (!users[account.username]) return;
-      const pw = users[account.username].password;
-      const merged = { ...users[account.username], ...fbData, password: pw };
-      users[account.username] = merged;
-      saveUsers(users);
-      // Mettre à jour l UI avec le vrai plan Firebase
-      applyUserData(merged);
-      updateSearchDisplay(merged);
-      updateComptePage(merged);
-    }).catch(() => {});
+      clearTimeout(timeout);
+      const l = document.getElementById('fb-sync-loader');
+      if (l) l.remove();
+
+      if (snap.exists()) {
+        const fbData = snap.data();
+        const users = getUsers();
+        if (users[account.username]) {
+          const pw = users[account.username].password;
+          const merged = { ...users[account.username], ...fbData, password: pw };
+          users[account.username] = merged;
+          saveUsers(users);
+          // Entrer avec les données Firebase à jour
+          enterApp(merged);
+          return;
+        }
+      }
+      enterApp(account);
+    }).catch(() => {
+      clearTimeout(timeout);
+      const l = document.getElementById('fb-sync-loader');
+      if (l) l.remove();
+      enterApp(account);
+    });
   } else {
     enterApp(account);
   }
@@ -1759,34 +1780,7 @@ function initApp() {
     const users = getUsers();
     const account = users[sess.username];
     if (account && account.status !== 'banni') {
-      // Si Firebase est prêt ET que l'utilisateur n'est pas admin,
-      // on fetch d'abord le vrai plan depuis Firebase AVANT d'afficher l'app
-      if (window._fbReady && window._db && account.username !== 'admin') {
-        window._db.collection('users').doc(account.username).get().then(snap => {
-          if (snap.exists()) {
-            const fbData = snap.data();
-            // Écraser le plan local avec le plan Firebase (source de vérité)
-            account.plan = fbData.plan || account.plan;
-            account.status = fbData.status || account.status;
-            account.searches = fbData.searches ?? account.searches;
-            account.lastSearchDay = fbData.lastSearchDay || account.lastSearchDay;
-            // Mettre à jour localStorage
-            const users2 = getUsers();
-            if (users2[account.username]) {
-              users2[account.username] = { ...users2[account.username], ...fbData, password: users2[account.username].password };
-              saveUsers(users2);
-            }
-          }
-          // Si banni après sync Firebase
-          if (account.status === 'banni') { clearSession(); document.getElementById('login-page').classList.add('show'); return; }
-          enterApp(account);
-        }).catch(() => {
-          // Firebase inaccessible → on entre quand même avec les données locales
-          enterApp(account);
-        });
-      } else {
-        enterApp(account);
-      }
+      syncThenEnter(account);
       return;
     } else {
       clearSession();
@@ -1794,6 +1788,7 @@ function initApp() {
   }
   document.getElementById('login-page').classList.add('show');
 }
+
 
 window.addEventListener('load', function() {
   function loadScript(src, cb, fallback) {
