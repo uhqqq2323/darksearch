@@ -1167,67 +1167,37 @@ function enterApp(account) {
 
   startWelcomeTyping(account.username);
 
-  // Firebase sync (non-admin only)
-  if (window._fbReady && window._db && account.username !== 'admin') {
-    // Fetch latest data
-    window._db.collection('users').doc(account.username).get().then(snap => {
-      if (snap.exists()) {
-        const d = snap.data();
-        const users = getUsers();
-        if (users[account.username]) {
-          const updated = { ...users[account.username], ...d, password: users[account.username].password };
-          users[account.username] = updated;
-          saveUsers(users);
-          updateSearchDisplay(updated);
-          updateComptePage(updated);
-          const pb = document.getElementById('sb-plan-badge');
-          if (pb) { pb.textContent = updated.plan[0].toUpperCase() + updated.plan.slice(1); pb.className = 'sb-plan-badge plan-' + updated.plan; }
-        }
-      }
-    }).catch(() => {});
+  // UI immédiat avec les données du compte (déjà synchro Firebase via initApp)
+  applyUserData(account);
+  document.getElementById('sb-admin').style.display = account.role === 'admin' ? '' : 'none';
 
-    // Real-time listener
+  // Listener temps réel pour les changements de plan en direct
+  if (window._fbReady && window._db && account.username !== 'admin') {
+    if (window._userListener) { window._userListener(); window._userListener = null; }
+
     window._userListener = window._db.collection('users').doc(account.username).onSnapshot(snap => {
       if (!snap.exists()) return;
       const fbData = snap.data();
       const users = getUsers();
       const currentUser = users[account.username];
-      if (!currentUser || !fbData.plan || currentUser.plan === fbData.plan) return;
+      if (!currentUser || !fbData.plan) return;
 
+      const planChanged = currentUser.plan !== fbData.plan;
       currentUser.plan = fbData.plan;
       currentUser.status = fbData.status || currentUser.status;
+      currentUser.searches = fbData.searches != null ? fbData.searches : currentUser.searches;
       users[account.username] = currentUser;
       saveUsers(users);
-      updateSearchDisplay(currentUser);
-      updateComptePage(currentUser);
-      const pb = document.getElementById('sb-plan-badge');
-      if (pb) {
-        pb.textContent = currentUser.plan[0].toUpperCase() + currentUser.plan.slice(1);
-        pb.className = 'sb-plan-badge plan-' + currentUser.plan;
-        pb.classList.add('plan-updated');
-        setTimeout(() => pb.classList.remove('plan-updated'), 1000);
+      applyUserData(currentUser);
+
+      if (planChanged) {
+        const notifs = getNotifications();
+        notifs.push({ id: Date.now().toString(), type: 'update', title: '🎉 Plan mis à jour !', body: 'Votre licence est maintenant : ' + currentUser.plan.toUpperCase(), date: new Date().toLocaleTimeString('fr-FR'), read: false });
+        saveNotifications(notifs);
+        renderNotifPanel();
       }
-      const notifs = getNotifications();
-      notifs.push({ id: Date.now().toString(), type: 'update', title: '🎉 Nouveau plan', body: 'Votre plan a été changé en ' + currentUser.plan, date: new Date().toLocaleTimeString('fr-FR'), read: false });
-      saveNotifications(notifs);
-      renderNotifPanel();
     });
   }
-
-  // UI setup
-  document.getElementById('topbar-avatar-letter').textContent = account.username[0].toUpperCase();
-  document.getElementById('sb-avatar-letter').textContent = account.username[0].toUpperCase();
-  document.getElementById('sb-username').textContent = account.username;
-  document.getElementById('sb-usertag').textContent = '@' + account.username;
-
-  const pb = document.getElementById('sb-plan-badge');
-  pb.textContent = account.plan[0].toUpperCase() + account.plan.slice(1);
-  pb.className = 'sb-plan-badge plan-' + account.plan;
-
-  document.getElementById('sb-admin').style.display = account.role === 'admin' ? '' : 'none';
-
-  updateSearchDisplay(account);
-  updateComptePage(account);
 
   initSnake();
   startClock();
@@ -1733,38 +1703,89 @@ document.getElementById('reg-pass2').addEventListener('keydown', e => { if (e.ke
 document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
 
 // ═══════════════════════════════════════════════════════
-// AUTO-LOGIN AU DÉMARRAGE
+// FIREBASE + AUTO-LOGIN (Firebase se charge EN PREMIER)
 // ═══════════════════════════════════════════════════════
-(function initApp() {
+
+function applyUserData(account) {
+  // Met à jour TOUS les éléments UI avec les données du compte
+  document.getElementById('topbar-avatar-letter').textContent = account.username[0].toUpperCase();
+  document.getElementById('sb-avatar-letter').textContent = account.username[0].toUpperCase();
+  document.getElementById('sb-username').textContent = account.username;
+  document.getElementById('sb-usertag').textContent = '@' + account.username;
+  const pb = document.getElementById('sb-plan-badge');
+  if (pb) {
+    pb.textContent = account.plan[0].toUpperCase() + account.plan.slice(1);
+    pb.className = 'sb-plan-badge plan-' + account.plan;
+    pb.classList.add('plan-updated');
+    setTimeout(() => pb.classList.remove('plan-updated'), 1200);
+  }
+  updateSearchDisplay(account);
+  updateComptePage(account);
+}
+
+function initApp() {
   const sess = getSession();
   if (sess) {
     const users = getUsers();
     const account = users[sess.username];
     if (account && account.status !== 'banni') {
-      enterApp(account);
+      // Si Firebase est prêt ET que l'utilisateur n'est pas admin,
+      // on fetch d'abord le vrai plan depuis Firebase AVANT d'afficher l'app
+      if (window._fbReady && window._db && account.username !== 'admin') {
+        window._db.collection('users').doc(account.username).get().then(snap => {
+          if (snap.exists()) {
+            const fbData = snap.data();
+            // Écraser le plan local avec le plan Firebase (source de vérité)
+            account.plan = fbData.plan || account.plan;
+            account.status = fbData.status || account.status;
+            account.searches = fbData.searches ?? account.searches;
+            account.lastSearchDay = fbData.lastSearchDay || account.lastSearchDay;
+            // Mettre à jour localStorage
+            const users2 = getUsers();
+            if (users2[account.username]) {
+              users2[account.username] = { ...users2[account.username], ...fbData, password: users2[account.username].password };
+              saveUsers(users2);
+            }
+          }
+          // Si banni après sync Firebase
+          if (account.status === 'banni') { clearSession(); document.getElementById('login-page').classList.add('show'); return; }
+          enterApp(account);
+        }).catch(() => {
+          // Firebase inaccessible → on entre quand même avec les données locales
+          enterApp(account);
+        });
+      } else {
+        enterApp(account);
+      }
       return;
     } else {
-      // Session invalide, nettoyer
       clearSession();
     }
   }
-  // Afficher login par défaut
   document.getElementById('login-page').classList.add('show');
-})();
+}
 
-// ═══════════════════════════════════════════════════════
-// FIREBASE
-// ═══════════════════════════════════════════════════════
 window.addEventListener('load', function() {
-  function loadScript(src, cb) {
+  function loadScript(src, cb, fallback) {
     const s = document.createElement('script');
     s.src = src;
     s.onload = cb;
-    s.onerror = function() { console.warn('[Firebase] Impossible de charger ' + src); };
+    s.onerror = fallback || function() { console.warn('[Firebase] Impossible de charger ' + src); };
     document.head.appendChild(s);
   }
+
+  const FIREBASE_TIMEOUT = 4000; // Si Firebase met trop longtemps, on lance quand même l'app
+
+  // Timeout de sécurité : si Firebase ne répond pas en 4s, on lance l'app sans
+  const fbTimeout = setTimeout(() => {
+    console.warn('[Firebase] Timeout — lancement sans Firebase');
+    window._fbReady = false;
+    initApp();
+  }, FIREBASE_TIMEOUT);
+
   loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js', function() {
     loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js', function() {
+      clearTimeout(fbTimeout); // Firebase a répondu à temps
       try {
         if (!firebase.apps.length) {
           firebase.initializeApp({
@@ -1781,8 +1802,21 @@ window.addEventListener('load', function() {
         console.log('[DarkSearcher] Firebase prêt ✅');
       } catch(e) {
         console.warn('[Firebase] Erreur init:', e);
+        window._fbReady = false;
       }
+      // Firebase prêt (ou en erreur) → on lance l'app maintenant
+      initApp();
+    }, function() {
+      clearTimeout(fbTimeout);
+      console.warn('[Firebase] Échec chargement Firestore');
+      window._fbReady = false;
+      initApp();
     });
+  }, function() {
+    clearTimeout(fbTimeout);
+    console.warn('[Firebase] Échec chargement SDK');
+    window._fbReady = false;
+    initApp();
   });
 });
 </script>
