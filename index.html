@@ -776,6 +776,10 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backgr
         <table class="admin-table"><thead><tr><th>Statut</th><th>Identifiant</th><th>Email</th><th>Licence</th><th>Requêtes</th><th>Depuis</th><th>Actions</th></tr></thead>
         <tbody id="admin-table-body"></tbody></table>
       </div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--r);color:var(--accent);font-size:12px;font-family:var(--mono);">
+        🧪 <strong>TEST MODE</strong> - Bouton pour déboguer la mise à jour en temps réel:
+        <button onclick="testUpdatePlan()" style="margin-left:12px;padding:6px 12px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-weight:600;cursor:none;font-family:var(--font);">▶ Tester mise à jour plan</button>
+      </div>
       <div class="notif-editor">
         <div class="notif-editor-title">🔔 Notifications globales</div>
         <div class="notif-form-grid">
@@ -1070,10 +1074,14 @@ function logout(){
   loginAttempts=0;loginBlocked=false;
   if(blockTimer)clearTimeout(blockTimer);
   if(adminInterval)clearInterval(adminInterval);
-  // ✅ NETTOYER LE LISTENER UTILISATEUR
+  // ✅ NETTOYER LES LISTENERS
   if(window._userListener){
     window._userListener();
     window._userListener=null;
+  }
+  if(window._refreshInterval){
+    clearInterval(window._refreshInterval);
+    window._refreshInterval=null;
   }
 }
 
@@ -1219,6 +1227,38 @@ function enterApp(account){
         }
       }
     });
+    
+    // ✅ AUSSI UN REFRESH RÉGULIER POUR S'ASSURER DE LA SYNC
+    window._refreshInterval=setInterval(()=>{
+      if(window._fbReady&&window._db){
+        window._db.collection('users').doc(account.username).get().then(snap=>{
+          if(snap.exists()){
+            const fbData=snap.data();
+            const users=getUsers();
+            const currentUser=users[account.username];
+            
+            if(currentUser&&fbData.plan&&currentUser.plan!==fbData.plan){
+              console.log('[Refresh] Plan synced: '+currentUser.plan+' → '+fbData.plan);
+              currentUser.plan=fbData.plan;
+              currentUser.status=fbData.status||currentUser.status;
+              users[account.username]=currentUser;
+              const toSave={};
+              for(const[k,u]of Object.entries(users)){toSave[k]={...u};if(k==='admin')delete toSave[k].password;}
+              localStorage.setItem('ds_users',JSON.stringify(toSave));
+              updateSearchDisplay(currentUser);
+              updateComptePage(currentUser);
+              const pb=document.getElementById('sb-plan-badge');
+              if(pb){
+                pb.textContent=currentUser.plan[0].toUpperCase()+currentUser.plan.slice(1);
+                pb.className='sb-plan-badge plan-'+currentUser.plan;
+                pb.classList.add('plan-updated');
+                setTimeout(()=>pb.classList.remove('plan-updated'),1000);
+              }
+            }
+          }
+        }).catch(e=>console.error('[Refresh] Error:',e));
+      }
+    },5000);
   }
   document.getElementById('topbar-avatar-letter').textContent=account.username[0].toUpperCase();
   document.getElementById('sb-avatar-letter').textContent=account.username[0].toUpperCase();
@@ -1574,10 +1614,11 @@ function saveEditUser(){
   
   // ✅ FIREBASE REAL-TIME UPDATE
   if(window._fbReady&&window._db){
-    window._db.collection('users').doc(username).update(
-      {plan, status, lastUpdated: new Date().getTime()}
+    window._db.collection('users').doc(username).set(
+      {plan, status, lastUpdated: new Date().getTime()},
+      {merge:true}
     ).then(()=>{
-      console.log('[Admin] Plan mis à jour en temps réel ✅');
+      console.log('[Admin] Plan sauvegardé en Firebase ✅');
       
       // ✅ NOTIFIER TOUS LES UTILISATEURS
       if(oldPlan!==plan){
@@ -1604,13 +1645,15 @@ function saveEditUser(){
     })
      .catch(e=>{
        console.error('[Admin] Erreur Firebase:',e);
-       btn.textContent='❌ Erreur';
+       console.error('[Debug] _fbReady:',window._fbReady,'_db:',!!window._db);
+       btn.textContent='❌ Erreur Firebase';
        btn.disabled=false;
        setTimeout(()=>btn.textContent=originalText,2000);
-       alert('Erreur lors de la mise à jour');
+       alert('Erreur Firebase: '+e.message);
      });
   }else{
-    btn.textContent='✅ Local!';
+    console.warn('[Admin] Firebase non prêt - saving localement seulement');
+    btn.textContent='⚠️ Local seulement';
     setTimeout(()=>{
       document.getElementById('edit-modal').classList.remove('show');
       btn.textContent=originalText;
@@ -1620,7 +1663,44 @@ function saveEditUser(){
   }
 }
 
-function deleteUser(username){
+function testUpdatePlan(){
+  console.log('🧪 TEST: Démarrage du test de mise à jour plan...');
+  
+  // Récupérer le premier utilisateur non-admin
+  const users=getUsers();
+  const testUser=Object.values(users).find(u=>u.username!=='admin');
+  
+  if(!testUser){
+    console.error('❌ Aucun utilisateur de test trouvé');
+    return;
+  }
+  
+  console.log('🧪 Utilisateur de test:', testUser.username, 'Plan actuel:', testUser.plan);
+  
+  const newPlan=testUser.plan==='free'?'pro':'free';
+  console.log('🧪 Nouveau plan à tester:', newPlan);
+  
+  // Sauvegarder localement
+  users[testUser.username].plan=newPlan;
+  saveUsers(users);
+  console.log('✅ Sauvegardé localement');
+  
+  // Sauvegarder sur Firebase
+  if(window._fbReady&&window._db){
+    console.log('🧪 Envoi vers Firebase...');
+    window._db.collection('users').doc(testUser.username).set(
+      {plan: newPlan, lastUpdated: new Date().getTime()},
+      {merge:true}
+    ).then(()=>{
+      console.log('✅ Firebase: Succès! Plan changé en '+newPlan);
+      console.log('🧪 Le changement devrait être visible dans 5 secondes...');
+    }).catch(e=>{
+      console.error('❌ Firebase: Erreur -', e.message);
+    });
+  }else{
+    console.error('❌ Firebase non prêt. _fbReady:',window._fbReady,'_db:',!!window._db);
+  }
+}
   if(username==='admin'){alert('Impossible de supprimer admin.');return;}
   if(!confirm('Supprimer '+username+' ?'))return;
   const users=getUsers();delete users[username];saveUsers(users);
