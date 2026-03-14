@@ -963,7 +963,7 @@ function doLogin() {
   loginAttempts = 0;
   hideLoginError();
   setSession(account);
-  enterApp(account);
+  syncThenEnter(account);
 }
 
 function doRegister() {
@@ -1021,7 +1021,7 @@ function doRegister() {
   setTimeout(() => {
     btn.disabled = false;
     btn.textContent = 'Créer le compte';
-    enterApp(newUser);
+    syncThenEnter(newUser);
   }, 800);
 }
 
@@ -1158,6 +1158,36 @@ function startWelcomeTyping(username) {
     }
   }
   type();
+}
+
+// syncThenEnter : TOUJOURS fetcher Firebase avant d afficher l app
+// C est la seule fonction à appeler pour entrer dans l app
+function syncThenEnter(account) {
+  if (window._fbReady && window._db && account.username !== 'admin') {
+    // Montrer un mini loader pendant la sync
+    document.getElementById('login-page').classList.remove('show');
+    document.getElementById('register-page').classList.remove('show');
+    document.getElementById('app').style.display = 'block';
+    // Afficher d abord avec les données locales
+    enterApp(account);
+    // Puis immédiatement re-fetcher Firebase pour corriger le plan
+    window._db.collection('users').doc(account.username).get().then(snap => {
+      if (!snap.exists()) return;
+      const fbData = snap.data();
+      const users = getUsers();
+      if (!users[account.username]) return;
+      const pw = users[account.username].password;
+      const merged = { ...users[account.username], ...fbData, password: pw };
+      users[account.username] = merged;
+      saveUsers(users);
+      // Mettre à jour l UI avec le vrai plan Firebase
+      applyUserData(merged);
+      updateSearchDisplay(merged);
+      updateComptePage(merged);
+    }).catch(() => {});
+  } else {
+    enterApp(account);
+  }
 }
 
 function enterApp(account) {
